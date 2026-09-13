@@ -11,7 +11,7 @@ export default function AppHeader() {
 
   return (
     <>
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-white print:hidden">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3.5">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-600">

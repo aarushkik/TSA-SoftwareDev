@@ -96,6 +96,8 @@ export type SessionRecord = {
   jobType: JobType;
   answers: AnsweredQuestion[];
   overallScore: number;
+  /** A free-text reflection the user can attach after a session, e.g. "focus more on eye contact next time." */
+  notes?: string;
 };
 
 /** Everything chosen on the setup screen, bundled so the callback doesn't grow a new positional parameter per option. */

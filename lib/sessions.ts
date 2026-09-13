@@ -74,3 +74,39 @@ export function clearSessions(): void {
   }
   notify();
 }
+
+export function updateSessionNotes(id: string, notes: string): void {
+  cache = getSessions().map((s) => (s.id === id ? { ...s, notes } : s));
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+  } catch {
+    // Ignore — same as above.
+  }
+  notify();
+}
+
+export function isSessionRecord(value: unknown): value is SessionRecord {
+  if (typeof value !== "object" || value === null) return false;
+  const s = value as Record<string, unknown>;
+  return (
+    typeof s.id === "string" &&
+    typeof s.completedAt === "string" &&
+    typeof s.jobType === "string" &&
+    Array.isArray(s.answers) &&
+    typeof s.overallScore === "number"
+  );
+}
+
+/** Merges previously-exported sessions into local storage, skipping any id already present. Returns how many were added. */
+export function importSessions(imported: SessionRecord[]): number {
+  const existingIds = new Set(getSessions().map((s) => s.id));
+  const additions = imported.filter((s) => !existingIds.has(s.id));
+  cache = [...additions, ...getSessions()].slice(0, MAX_SESSIONS);
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+  } catch {
+    // Ignore — same as above.
+  }
+  notify();
+  return additions.length;
+}

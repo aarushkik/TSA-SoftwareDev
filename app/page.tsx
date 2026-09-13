@@ -48,6 +48,7 @@ export default function Home() {
   const [askedIds, setAskedIds] = useState<Set<string>>(new Set());
   const [answers, setAnswers] = useState<AnsweredQuestion[]>([]);
   const [lastAnswered, setLastAnswered] = useState<AnsweredQuestion | null>(null);
+  const [lastSessionId, setLastSessionId] = useState<string | null>(null);
   // Captured right before each answer's difficulty adjustment, so a retry
   // can undo that shift instead of compounding two adjustments for one question.
   const [difficultyBeforeAnswer, setDifficultyBeforeAnswer] = useState<Difficulty>("beginner");
@@ -111,6 +112,7 @@ export default function Home() {
     };
     saveSession(session);
     setAnswers(finalAnswers);
+    setLastSessionId(session.id);
     setPhase("summary");
   }
 
@@ -217,7 +219,13 @@ export default function Home() {
         )}
 
         {phase === "summary" && (
-          <SessionSummary jobType={jobType} answers={answers} overallScore={overallScore} onPracticeAgain={handlePracticeAgain} />
+          <SessionSummary
+            jobType={jobType}
+            answers={answers}
+            overallScore={overallScore}
+            sessionId={lastSessionId}
+            onPracticeAgain={handlePracticeAgain}
+          />
         )}
       </div>
     </main>

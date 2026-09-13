@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import CountUpNumber from "./CountUpNumber";
 import { scoreColor } from "./MetricBar";
+import { updateSessionNotes } from "@/lib/sessions";
 import { DIFFICULTY_LABELS, JOB_TYPE_LABELS, type AnsweredQuestion, type Difficulty, type JobType, type Metric } from "@/lib/types";
 
 const METRIC_LABELS: Record<Metric["key"], string> = {
@@ -73,14 +74,18 @@ export default function SessionSummary({
   jobType,
   answers,
   overallScore,
+  sessionId,
   onPracticeAgain,
 }: {
   jobType: JobType;
   answers: AnsweredQuestion[];
   overallScore: number;
+  sessionId: string | null;
   onPracticeAgain: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [notesSaved, setNotesSaved] = useState(false);
   const averages = averageByMetric(answers).sort((a, b) => b.average - a.average);
   const strengths = averages.filter((m) => m.average >= 78);
   const focusAreas = averages.filter((m) => m.average < 65);
@@ -96,6 +101,13 @@ export default function SessionSummary({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  }
+
+  function handleSaveNotes() {
+    if (!sessionId) return;
+    updateSessionNotes(sessionId, notes);
+    setNotesSaved(true);
+    setTimeout(() => setNotesSaved(false), 2000);
   }
 
   return (
@@ -148,15 +160,42 @@ export default function SessionSummary({
         </section>
       )}
 
-      <button
-        type="button"
-        onClick={handleCopySummary}
-        className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-500 transition hover:border-slate-300 hover:text-slate-700 active:scale-[0.98]"
-      >
-        {copied ? "Copied to clipboard!" : "Copy summary"}
-      </button>
+      {sessionId && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 print:hidden">
+          <label htmlFor="session-notes" className="text-xs font-medium text-slate-600">
+            Reflection notes
+          </label>
+          <textarea
+            id="session-notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            onBlur={handleSaveNotes}
+            rows={3}
+            placeholder="What do you want to remember or try differently next time?"
+            className="mt-1.5 w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-teal-600"
+          />
+          <p className="mt-1 text-[11px] text-slate-400">{notesSaved ? "Saved." : "Saved automatically when you click away."}</p>
+        </section>
+      )}
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 print:hidden">
+        <button
+          type="button"
+          onClick={handleCopySummary}
+          className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-500 transition hover:border-slate-300 hover:text-slate-700 active:scale-[0.98]"
+        >
+          {copied ? "Copied!" : "Copy summary"}
+        </button>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-500 transition hover:border-slate-300 hover:text-slate-700 active:scale-[0.98]"
+        >
+          Print report
+        </button>
+      </div>
+
+      <div className="flex gap-2 print:hidden">
         <button
           type="button"
           onClick={onPracticeAgain}

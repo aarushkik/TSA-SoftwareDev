@@ -1,11 +1,19 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore, type ChangeEvent } from "react";
 import CountUpNumber from "@/components/CountUpNumber";
 import { scoreColor } from "@/components/MetricBar";
 import ScoreTrendChart from "@/components/ScoreTrendChart";
 import { ACHIEVEMENTS, currentStreakDays, unlockedAchievements } from "@/lib/achievements";
-import { clearSessions, deleteSession, getSessions, getSessionsServerSnapshot, subscribeSessions } from "@/lib/sessions";
+import {
+  clearSessions,
+  deleteSession,
+  getSessions,
+  getSessionsServerSnapshot,
+  importSessions,
+  isSessionRecord,
+  subscribeSessions,
+} from "@/lib/sessions";
 import { JOB_TYPE_LABELS } from "@/lib/types";
 
 function average(values: number[]): number {
@@ -15,6 +23,41 @@ function average(values: number[]): number {
 
 export default function ProgressPage() {
   const sessions = useSyncExternalStore(subscribeSessions, getSessions, getSessionsServerSnapshot);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  function handleExport() {
+    const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `interview-coach-sessions-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleImportFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    file
+      .text()
+      .then((text) => {
+        const parsed: unknown = JSON.parse(text);
+        const candidates = Array.isArray(parsed) ? parsed : [parsed];
+        const valid = candidates.filter(isSessionRecord);
+        if (valid.length === 0) {
+          setImportMessage("That file didn't contain any recognizable sessions.");
+          return;
+        }
+        const added = importSessions(valid);
+        setImportMessage(
+          added === 0 ? "Those sessions were already in your history." : `Imported ${added} session${added === 1 ? "" : "s"}.`,
+        );
+      })
+      .catch(() => setImportMessage("Couldn't read that file — make sure it's a session export from this app."))
+      .finally(() => setTimeout(() => setImportMessage(null), 4000));
+  }
 
   const avgScore = average(sessions.map((s) => s.overallScore));
   const avgWpm = average(
@@ -123,18 +166,32 @@ export default function ProgressPage() {
             })}
           </div>
 
-          <div className="mt-5 flex items-center justify-between">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-medium text-slate-500">Session history</p>
-            <button
-              type="button"
-              onClick={() => {
-                if (confirm("Clear all saved sessions? This can't be undone.")) clearSessions();
-              }}
-              className="text-[11px] font-medium text-slate-400 hover:text-rose-600"
-            >
-              Clear all
-            </button>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={handleExport} className="text-[11px] font-medium text-slate-400 hover:text-slate-700">
+                Export
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[11px] font-medium text-slate-400 hover:text-slate-700"
+              >
+                Import
+              </button>
+              <input ref={fileInputRef} type="file" accept="application/json" onChange={handleImportFile} className="hidden" />
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Clear all saved sessions? This can't be undone.")) clearSessions();
+                }}
+                className="text-[11px] font-medium text-slate-400 hover:text-rose-600"
+              >
+                Clear all
+              </button>
+            </div>
           </div>
+          {importMessage && <p className="mt-1.5 text-[11px] text-teal-700">{importMessage}</p>}
 
           <ul className="mt-2 space-y-2">
             {sessions.map((s) => (
@@ -149,6 +206,7 @@ export default function ProgressPage() {
                     {" · "}
                     {s.answers.length} question{s.answers.length === 1 ? "" : "s"}
                   </p>
+                  {s.notes && <p className="mt-0.5 truncate text-xs italic text-slate-400">&ldquo;{s.notes}&rdquo;</p>}
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   <span className={`text-lg font-semibold tabular-nums ${scoreColor(s.overallScore)}`}>{s.overallScore}</span>
