@@ -130,6 +130,34 @@ test("a long pause lowers the pace score, and a short one doesn't", () => {
   assert.match(metric(longPause, "pace").detail, /longest pause/i);
 });
 
+test("each metric's per-answer weight matches its share of the base weight table when nothing is unavailable", () => {
+  const text = Array(80).fill("word").join(" ");
+  const analysis = analyzeAnswer(text, 40, true, { totalSamples: 10, samplesWithFace: 10, samplesCentered: 8 }, 0, {
+    sampleCount: 20,
+    meanVolume: 0.1,
+    volumeStdDev: 0.03,
+  });
+  assert.ok(analysis.metrics.every((m) => m.available));
+  for (const m of analysis.metrics) {
+    assert.ok(Math.abs(m.weight - WEIGHTS[m.key]) < 1e-9);
+  }
+  const totalWeight = analysis.metrics.reduce((sum, m) => sum + m.weight, 0);
+  assert.ok(Math.abs(totalWeight - 1) < 1e-9);
+});
+
+test("an unavailable metric's weight is 0, and the rest still sum to 1", () => {
+  const text = Array(80).fill("word").join(" ");
+  // No camera or vocal-energy data, and not a behavioral question: structure,
+  // engagement, and vocalEnergy are unavailable; the other three are measured.
+  const analysis = analyzeAnswer(text, 40, false);
+  const unavailable = analysis.metrics.filter((m) => !m.available);
+  const available = analysis.metrics.filter((m) => m.available);
+  assert.ok(unavailable.length > 0 && available.length > 0);
+  assert.ok(unavailable.every((m) => m.weight === 0));
+  const totalWeight = available.reduce((sum, m) => sum + m.weight, 0);
+  assert.ok(Math.abs(totalWeight - 1) < 1e-9);
+});
+
 test("every metric has a tip and a full explanation, matching the weight table's keys", () => {
   const keys = Object.keys(WEIGHTS);
   assert.deepEqual(Object.keys(METRIC_TIPS).sort(), keys.sort());

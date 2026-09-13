@@ -79,6 +79,13 @@ export default function MetricBar({ metric }: { metric: Metric }) {
             <span className="font-medium text-slate-600">How it&apos;s scored — </span>
             {explanation.howScored}
           </p>
+          {metric.available && (
+            <p>
+              <span className="font-medium text-slate-600">This answer — </span>
+              Counted for {Math.round(metric.weight * 100)}% of this answer&apos;s overall score, contributing{" "}
+              {(metric.score * metric.weight).toFixed(1)} of its 100 points.
+            </p>
+          )}
           {metric.available && metric.score < 70 && (
             <p className="text-teal-700">
               <span className="font-medium">Tip — </span>

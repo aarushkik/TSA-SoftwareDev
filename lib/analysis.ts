@@ -188,7 +188,7 @@ export function analyzeAnswer(
   const wordsPerMinute = durationSeconds > 0 ? (wordCount / durationSeconds) * 60 : 0;
   const starParts = starRelevant ? detectStarParts(transcript) : null;
 
-  const metrics: Omit<Metric, "score">[] = [];
+  const metrics: Omit<Metric, "score" | "weight">[] = [];
   const rawScores: Record<Metric["key"], number> = {
     communication: 0,
     pace: 0,
@@ -340,15 +340,12 @@ export function analyzeAnswer(
   const finalMetrics: Metric[] = metrics.map((m) => ({
     ...m,
     score: m.available ? rawScores[m.key] : 0,
+    weight: m.available && availableWeight > 0 ? weights[m.key] / availableWeight : 0,
   }));
 
   const overallScore =
     availableWeight > 0
-      ? Math.round(
-          finalMetrics
-            .filter((m) => m.available)
-            .reduce((sum, m) => sum + m.score * (weights[m.key] / availableWeight), 0),
-        )
+      ? Math.round(finalMetrics.filter((m) => m.available).reduce((sum, m) => sum + m.score * m.weight, 0))
       : 0;
 
   return {

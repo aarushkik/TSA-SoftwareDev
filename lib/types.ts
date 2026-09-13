@@ -58,6 +58,12 @@ export type Metric = {
   /** Human sentence built from the same numbers that produced the score. */
   detail: string;
   available: boolean;
+  /**
+   * This metric's exact share (0-1) of THIS answer's overall score, after
+   * redistributing the weight of any unavailable metrics. Always 0 when
+   * unavailable. The available weights for one answer always sum to 1.
+   */
+  weight: number;
 };
 
 export type StarParts = {
