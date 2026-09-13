@@ -1,12 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { analyzeAnswer } from "./analysis.ts";
+import { analyzeAnswer, WEIGHTS } from "./analysis.ts";
 
 function metric(analysis: ReturnType<typeof analyzeAnswer>, key: string) {
   const m = analysis.metrics.find((m) => m.key === key);
   assert.ok(m, `expected a ${key} metric`);
   return m;
 }
+
+test("the metric weights sum to 1", () => {
+  const total = Object.values(WEIGHTS).reduce((sum, w) => sum + w, 0);
+  assert.ok(Math.abs(total - 1) < 1e-9, `expected weights to sum to 1, got ${total}`);
+});
 
 test("an empty response scores nothing and every metric is unavailable or zero", () => {
   const a = analyzeAnswer("", 10, false);
@@ -76,6 +81,19 @@ test("a mostly-centred face scores higher engagement than a mostly-absent one", 
   const absent = analyzeAnswer(text, 15, false, { totalSamples: 10, samplesWithFace: 2, samplesCentered: 1 });
   assert.ok(metric(centered, "engagement").score > metric(absent, "engagement").score);
   assert.equal(metric(centered, "engagement").available, true);
+});
+
+test("vocal energy is unavailable without enough audio samples", () => {
+  const a = analyzeAnswer("A fine answer to the question.", 10, false, null, 0, { sampleCount: 2, meanVolume: 0.1, volumeStdDev: 0.05 });
+  assert.equal(metric(a, "vocalEnergy").available, false);
+});
+
+test("more volume variation scores higher vocal energy than a flat, monotone level", () => {
+  const text = "A fine, reasonably developed answer to the question that was asked.";
+  const expressive = analyzeAnswer(text, 15, false, null, 0, { sampleCount: 50, meanVolume: 0.1, volumeStdDev: 0.05 });
+  const monotone = analyzeAnswer(text, 15, false, null, 0, { sampleCount: 50, meanVolume: 0.1, volumeStdDev: 0.002 });
+  assert.ok(metric(expressive, "vocalEnergy").score > metric(monotone, "vocalEnergy").score);
+  assert.equal(metric(expressive, "vocalEnergy").available, true);
 });
 
 test("a long pause lowers the pace score, and a short one doesn't", () => {

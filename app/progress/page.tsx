@@ -1,8 +1,10 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import CountUpNumber from "@/components/CountUpNumber";
 import { scoreColor } from "@/components/MetricBar";
 import ScoreTrendChart from "@/components/ScoreTrendChart";
+import { ACHIEVEMENTS, currentStreakDays, unlockedAchievements } from "@/lib/achievements";
 import { clearSessions, deleteSession, getSessions, getSessionsServerSnapshot, subscribeSessions } from "@/lib/sessions";
 import { JOB_TYPE_LABELS } from "@/lib/types";
 
@@ -26,9 +28,11 @@ export default function ProgressPage() {
   const secondHalf = chronological.slice(Math.ceil(chronological.length / 2));
   const trend =
     chronological.length >= 2 ? average(secondHalf.map((s) => s.overallScore)) - average(firstHalf.map((s) => s.overallScore)) : null;
+  const streak = currentStreakDays(sessions);
+  const unlocked = new Set(unlockedAchievements(sessions).map((a) => a.id));
 
   return (
-    <main className="mx-auto max-w-2xl flex-1 px-4 py-10">
+    <main className="mx-auto max-w-2xl flex-1 animate-fade-in px-4 py-10">
       <h1 className="text-xl font-semibold text-slate-900">Your progress</h1>
 
       {sessions.length === 0 ? (
@@ -38,17 +42,34 @@ export default function ProgressPage() {
         </div>
       ) : (
         <>
-          <div className="mt-5 grid grid-cols-3 gap-2">
+          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-              <p className={`text-2xl font-bold tabular-nums ${scoreColor(avgScore)}`}>{avgScore}</p>
+              <p className={`text-2xl font-bold tabular-nums ${scoreColor(avgScore)}`}>
+                <CountUpNumber value={avgScore} />
+              </p>
               <p className="mt-0.5 text-[11px] text-slate-500">Avg. score</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-              <p className="text-2xl font-bold tabular-nums text-slate-800">{avgWpm}</p>
+              <p className="flex items-center justify-center gap-1 text-2xl font-bold tabular-nums text-slate-800">
+                <CountUpNumber value={streak} />
+                {streak > 0 && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-amber-500" aria-hidden>
+                    <path d="M12 2c-1.5 3-4 4.5-4 8a4 4 0 008 0c0-1.2-.5-2-1-2.7.2 1.5-.6 2.2-1.3 2.2-1 0-1.2-1-.7-1.8.9-1.4.9-3.2-1-5.7z" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500">Day streak</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
+              <p className="text-2xl font-bold tabular-nums text-slate-800">
+                <CountUpNumber value={avgWpm} />
+              </p>
               <p className="mt-0.5 text-[11px] text-slate-500">Avg. words/min</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-              <p className="text-2xl font-bold tabular-nums text-slate-800">{avgFillers}</p>
+              <p className="text-2xl font-bold tabular-nums text-slate-800">
+                <CountUpNumber value={avgFillers} />
+              </p>
               <p className="mt-0.5 text-[11px] text-slate-500">Avg. fillers/session</p>
             </div>
           </div>
@@ -68,6 +89,40 @@ export default function ProgressPage() {
             </div>
           )}
 
+          <p className="mt-5 text-xs font-medium text-slate-500">
+            Achievements <span className="font-normal text-slate-400">({unlocked.size}/{ACHIEVEMENTS.length})</span>
+          </p>
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {ACHIEVEMENTS.map((achievement) => {
+              const isUnlocked = unlocked.has(achievement.id);
+              return (
+                <div
+                  key={achievement.id}
+                  className={`rounded-xl border p-3 transition ${
+                    isUnlocked ? "border-teal-200 bg-teal-50" : "border-slate-200 bg-white opacity-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill={isUnlocked ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className={isUnlocked ? "shrink-0 text-teal-600" : "shrink-0 text-slate-400"}
+                      aria-hidden
+                    >
+                      <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9-6.2-3.3-6.2 3.3 1.2-6.9-5-4.9 6.9-1z" strokeLinejoin="round" />
+                    </svg>
+                    <p className={`text-xs font-semibold ${isUnlocked ? "text-teal-900" : "text-slate-600"}`}>{achievement.label}</p>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{achievement.description}</p>
+                </div>
+              );
+            })}
+          </div>
+
           <div className="mt-5 flex items-center justify-between">
             <p className="text-xs font-medium text-slate-500">Session history</p>
             <button
@@ -83,7 +138,10 @@ export default function ProgressPage() {
 
           <ul className="mt-2 space-y-2">
             {sessions.map((s) => (
-              <li key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3.5">
+              <li
+                key={s.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:border-slate-300"
+              >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-800">{JOB_TYPE_LABELS[s.jobType]}</p>
                   <p className="text-xs text-slate-400">

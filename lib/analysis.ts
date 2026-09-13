@@ -1,4 +1,4 @@
-import type { AnswerAnalysis, EngagementSummary, Metric, StarParts } from "./types";
+import type { AnswerAnalysis, EngagementSummary, Metric, StarParts, VocalEnergySummary } from "./types";
 
 /**
  * Interview performance scoring.
@@ -34,12 +34,23 @@ const NOTABLE_PAUSE_SECONDS = 4;
 /** Points lost from the pace score per second the longest pause exceeds the threshold above. */
 const PAUSE_PENALTY_PER_SECOND = 4;
 
+/** Fewer volume samples than this isn't enough to measure vocal dynamics reliably. */
+const MIN_VOCAL_SAMPLES = 5;
+/**
+ * Coefficient of variation (volume std-dev / mean volume) at or above this
+ * counts as fully expressive. Below it, the score falls off proportionally.
+ * This is a direct measurement of volume dynamics, not a validated
+ * "confidence" scale — the detail text says exactly that.
+ */
+const VOCAL_CV_FOR_FULL_SCORE = 0.28;
+
 export const WEIGHTS = {
-  communication: 0.25,
-  pace: 0.2,
-  fillerControl: 0.2,
-  structure: 0.2,
-  engagement: 0.15,
+  communication: 0.2,
+  pace: 0.18,
+  fillerControl: 0.17,
+  structure: 0.17,
+  engagement: 0.13,
+  vocalEnergy: 0.15,
 } as const;
 
 function clamp(n: number, lo = 0, hi = 100): number {
@@ -86,6 +97,7 @@ export function analyzeAnswer(
   starRelevant: boolean,
   engagement: EngagementSummary | null = null,
   longestPauseSeconds = 0,
+  vocalEnergy: VocalEnergySummary | null = null,
 ): AnswerAnalysis {
   const wordCount = countWords(transcript);
   const fillerWords = findFillerWords(transcript);
@@ -99,6 +111,7 @@ export function analyzeAnswer(
     fillerControl: 0,
     structure: 0,
     engagement: 0,
+    vocalEnergy: 0,
   };
 
   // Communication: is the answer substantial enough without rambling?
@@ -205,6 +218,31 @@ export function analyzeAnswer(
         engagement.samplesWithFace === 0
           ? "No face was detected in the camera frame during your answer"
           : `Facing the camera in ${Math.round(rawScores.engagement)}% of camera checks (face visible ${presentRate}% of the time)`,
+      available: true,
+    });
+  }
+
+  // Vocal energy: how much your volume varied while answering, measured
+  // directly from the microphone via the Web Audio API (see
+  // useVocalEnergy). This is expressiveness, not confidence or emotion —
+  // the detail text says exactly what was measured.
+  if (!vocalEnergy || vocalEnergy.sampleCount < MIN_VOCAL_SAMPLES) {
+    metrics.push({
+      key: "vocalEnergy",
+      label: "Vocal energy",
+      detail: "Not enough audio was captured to measure vocal dynamics",
+      available: false,
+    });
+  } else {
+    const cv = vocalEnergy.meanVolume > 0 ? vocalEnergy.volumeStdDev / vocalEnergy.meanVolume : 0;
+    rawScores.vocalEnergy = clamp((cv / VOCAL_CV_FOR_FULL_SCORE) * 100);
+    metrics.push({
+      key: "vocalEnergy",
+      label: "Vocal energy",
+      detail:
+        rawScores.vocalEnergy >= 70
+          ? "Your volume varied naturally — an expressive, engaged delivery"
+          : "Your volume stayed fairly flat — varying it a bit more can help emphasize key points",
       available: true,
     });
   }

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useFaceEngagement } from "@/lib/useFaceEngagement";
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
-import { DIFFICULTY_LABELS, type EngagementSummary, type Question } from "@/lib/types";
+import { useVocalEnergy } from "@/lib/useVocalEnergy";
+import { DIFFICULTY_LABELS, type EngagementSummary, type Question, type VocalEnergySummary } from "@/lib/types";
 
 export default function QuestionCard({
   question,
@@ -16,10 +17,17 @@ export default function QuestionCard({
   questionNumber: number;
   totalQuestions: number;
   cameraEnabled: boolean;
-  onSubmit: (transcript: string, durationSeconds: number, engagement: EngagementSummary | null, longestPauseSeconds: number) => void;
+  onSubmit: (
+    transcript: string,
+    durationSeconds: number,
+    engagement: EngagementSummary | null,
+    longestPauseSeconds: number,
+    vocalEnergy: VocalEnergySummary | null,
+  ) => void;
 }) {
   const { transcript, interim, state, error, start, stop } = useSpeechRecognition();
   const face = useFaceEngagement();
+  const energy = useVocalEnergy();
   const [typedAnswer, setTypedAnswer] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const startedAtRef = useRef<number | null>(null);
@@ -40,21 +48,23 @@ export default function QuestionCard({
     }, 250);
     start();
     if (cameraEnabled && videoRef.current) void face.start(videoRef.current);
+    void energy.start();
   }
 
   function handleStopAndSubmit() {
     if (timerRef.current) clearInterval(timerRef.current);
     const result = stop();
     const engagementSummary = cameraEnabled ? face.stop() : null;
-    onSubmit(result.transcript, result.durationSeconds, engagementSummary, result.longestPauseSeconds);
+    const vocalEnergySummary = energy.stop();
+    onSubmit(result.transcript, result.durationSeconds, engagementSummary, result.longestPauseSeconds, vocalEnergySummary);
   }
 
   function handleTypedSubmit() {
     // A rough words-per-minute baseline for typed answers: 40 wpm reading/composing pace.
-    // No speech recognition ran, so there's no pause signal to measure — 0 is honest, not guessed.
+    // No speech recognition ran, so there's no pause or vocal-energy signal — 0/null is honest, not guessed.
     const wordCount = typedAnswer.trim().split(/\s+/).filter(Boolean).length;
     const estimatedSeconds = Math.max(10, (wordCount / 40) * 60);
-    onSubmit(typedAnswer.trim(), estimatedSeconds, null, 0);
+    onSubmit(typedAnswer.trim(), estimatedSeconds, null, 0, null);
   }
 
   return (
@@ -106,7 +116,7 @@ export default function QuestionCard({
             type="button"
             onClick={handleTypedSubmit}
             disabled={typedAnswer.trim().length === 0}
-            className="mt-3 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+            className="mt-3 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
           >
             Submit answer
           </button>
@@ -117,7 +127,7 @@ export default function QuestionCard({
             <button
               type="button"
               onClick={handleStart}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 p-3.5 text-sm font-medium text-teal-700 transition hover:bg-teal-100"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 p-3.5 text-sm font-medium text-teal-700 transition hover:bg-teal-100 active:scale-[0.98]"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
                 <rect x="9" y="2" width="6" height="12" rx="3" />
@@ -140,7 +150,7 @@ export default function QuestionCard({
                 <button
                   type="button"
                   onClick={handleStopAndSubmit}
-                  className="rounded-lg border border-rose-300 bg-white px-3 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100"
+                  className="rounded-lg border border-rose-300 bg-white px-3 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-100 active:scale-[0.98]"
                 >
                   Stop &amp; submit
                 </button>

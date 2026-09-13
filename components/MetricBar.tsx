@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import type { Metric } from "@/lib/types";
 
 export function scoreColor(score: number): string {
@@ -13,6 +16,16 @@ function barColor(score: number): string {
 }
 
 export default function MetricBar({ metric }: { metric: Metric }) {
+  // Starts at 0 and fills to the real score just after mount, so the bar
+  // reads as data animating in rather than appearing pre-filled.
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    if (!metric.available) return;
+    const frame = requestAnimationFrame(() => setWidth(Math.max(2, metric.score)));
+    return () => cancelAnimationFrame(frame);
+  }, [metric.available, metric.score]);
+
   return (
     <li className="py-3">
       <div className="flex items-baseline justify-between gap-3">
@@ -25,7 +38,10 @@ export default function MetricBar({ metric }: { metric: Metric }) {
       </div>
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
         {metric.available && (
-          <div className={`h-full rounded-full ${barColor(metric.score)}`} style={{ width: `${Math.max(2, metric.score)}%` }} />
+          <div
+            className={`h-full rounded-full transition-[width] duration-700 ease-out ${barColor(metric.score)}`}
+            style={{ width: `${width}%` }}
+          />
         )}
       </div>
       <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{metric.detail}</p>

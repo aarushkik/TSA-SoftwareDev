@@ -35,7 +35,7 @@ export type Question = {
 
 /** One measured sub-score behind the overall score — always shown with the raw numbers that produced it. */
 export type Metric = {
-  key: "communication" | "pace" | "fillerControl" | "structure" | "engagement";
+  key: "communication" | "pace" | "fillerControl" | "structure" | "engagement" | "vocalEnergy";
   label: string;
   /** 0-100, higher is better. */
   score: number;
@@ -56,6 +56,13 @@ export type EngagementSummary = {
   totalSamples: number;
   samplesWithFace: number;
   samplesCentered: number;
+};
+
+/** Microphone volume samples from the browser-side audio loop — see useVocalEnergy. */
+export type VocalEnergySummary = {
+  sampleCount: number;
+  meanVolume: number;
+  volumeStdDev: number;
 };
 
 export type AnswerAnalysis = {

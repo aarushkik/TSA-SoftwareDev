@@ -80,7 +80,7 @@ export default function ScenarioPicker({
             type="button"
             onClick={() => setJobType(type)}
             aria-pressed={jobType === type}
-            className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${
+            className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition active:scale-[0.98] ${
               jobType === type
                 ? "border-teal-600 bg-teal-50 text-teal-800"
                 : "border-slate-200 text-slate-600 hover:border-slate-300"
@@ -100,7 +100,7 @@ export default function ScenarioPicker({
             type="button"
             onClick={() => setQuestionCount(count)}
             aria-pressed={questionCount === count}
-            className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
+            className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition active:scale-[0.98] ${
               questionCount === count
                 ? "border-teal-600 bg-teal-50 text-teal-800"
                 : "border-slate-200 text-slate-600 hover:border-slate-300"
@@ -136,7 +136,7 @@ export default function ScenarioPicker({
       <button
         type="button"
         onClick={() => onStart(jobType, questionCount, cameraEnabled)}
-        className="mt-4 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700"
+        className="mt-4 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 active:scale-[0.98]"
       >
         Start practice session
       </button>

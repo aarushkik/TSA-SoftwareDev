@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import CountUpNumber from "./CountUpNumber";
 import { scoreColor } from "./MetricBar";
-import { DIFFICULTY_LABELS, type AnsweredQuestion, type Difficulty, type Metric } from "@/lib/types";
+import { DIFFICULTY_LABELS, JOB_TYPE_LABELS, type AnsweredQuestion, type Difficulty, type JobType, type Metric } from "@/lib/types";
 
 const METRIC_LABELS: Record<Metric["key"], string> = {
   communication: "Response substance",
@@ -8,6 +12,7 @@ const METRIC_LABELS: Record<Metric["key"], string> = {
   fillerControl: "Filler word control",
   structure: "Answer structure",
   engagement: "Eye contact & engagement",
+  vocalEnergy: "Vocal energy",
 };
 
 const CATEGORY_SUGGESTIONS: Record<Metric["key"], string> = {
@@ -16,12 +21,19 @@ const CATEGORY_SUGGESTIONS: Record<Metric["key"], string> = {
   fillerControl: "Any category — focus on trimming filler words like \"um\" and \"like\"",
   structure: "Behavioral questions — practice structuring answers with the STAR method (Situation, Task, Action, Result)",
   engagement: "Enable camera analysis and practice facing the camera consistently while you answer",
+  vocalEnergy: "Any category — practice varying your tone instead of speaking in a flat monotone",
 };
 
 function recommendedDifficulty(score: number): Difficulty {
   if (score >= 80) return "advanced";
   if (score < 50) return "beginner";
   return "intermediate";
+}
+
+function sessionEncouragement(score: number): string {
+  if (score >= 85) return "Excellent session — you're building real momentum.";
+  if (score >= 65) return "Nice work — solid progress this session.";
+  return "Session complete — every rep like this helps.";
 }
 
 function averageByMetric(answers: AnsweredQuestion[]): { key: Metric["key"]; label: string; average: number }[] {
@@ -42,15 +54,33 @@ function averageByMetric(answers: AnsweredQuestion[]): { key: Metric["key"]; lab
   }));
 }
 
+function buildSummaryText(
+  jobType: JobType,
+  answers: AnsweredQuestion[],
+  overallScore: number,
+  averages: { label: string; average: number }[],
+): string {
+  const lines = [
+    "Interview Coach — Practice Session Summary",
+    `${JOB_TYPE_LABELS[jobType]} · ${answers.length} question${answers.length === 1 ? "" : "s"} · Overall score: ${overallScore}/100`,
+    "",
+    ...averages.map((m) => `${m.label}: ${m.average}/100`),
+  ];
+  return lines.join("\n");
+}
+
 export default function SessionSummary({
+  jobType,
   answers,
   overallScore,
   onPracticeAgain,
 }: {
+  jobType: JobType;
   answers: AnsweredQuestion[];
   overallScore: number;
   onPracticeAgain: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
   const averages = averageByMetric(answers).sort((a, b) => b.average - a.average);
   const strengths = averages.filter((m) => m.average >= 78);
   const focusAreas = averages.filter((m) => m.average < 65);
@@ -60,11 +90,21 @@ export default function SessionSummary({
     answers.reduce((sum, a) => sum + a.analysis.wordsPerMinute, 0) / Math.max(1, answers.length),
   );
 
+  function handleCopySummary() {
+    const text = buildSummaryText(jobType, answers, overallScore, averages);
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   return (
     <div className="mx-auto max-w-lg space-y-3">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-        <p className="text-xs font-medium text-slate-500">Session complete</p>
-        <p className={`mt-1 text-4xl font-bold tabular-nums ${scoreColor(overallScore)}`}>{overallScore}</p>
+        <p className="text-xs font-medium text-slate-500">{sessionEncouragement(overallScore)}</p>
+        <p className={`mt-1 text-4xl font-bold tabular-nums ${scoreColor(overallScore)}`}>
+          <CountUpNumber value={overallScore} />
+        </p>
         <p className="text-xs text-slate-400">out of 100 · {answers.length} question{answers.length === 1 ? "" : "s"}</p>
         <div className="mt-4 flex justify-center gap-6 text-xs text-slate-500">
           <span>{avgWpm} avg. words/min</span>
@@ -108,17 +148,25 @@ export default function SessionSummary({
         </section>
       )}
 
+      <button
+        type="button"
+        onClick={handleCopySummary}
+        className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-500 transition hover:border-slate-300 hover:text-slate-700 active:scale-[0.98]"
+      >
+        {copied ? "Copied to clipboard!" : "Copy summary"}
+      </button>
+
       <div className="flex gap-2">
         <button
           type="button"
           onClick={onPracticeAgain}
-          className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700"
+          className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 active:scale-[0.98]"
         >
           Practice again
         </button>
         <Link
           href="/progress"
-          className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-center text-sm font-medium text-slate-600 transition hover:border-slate-300"
+          className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-center text-sm font-medium text-slate-600 transition hover:border-slate-300 active:scale-[0.98]"
         >
           View progress
         </Link>

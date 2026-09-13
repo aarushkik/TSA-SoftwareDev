@@ -1,3 +1,4 @@
+import CountUpNumber from "./CountUpNumber";
 import MetricBar, { scoreColor } from "./MetricBar";
 import type { AnsweredQuestion } from "@/lib/types";
 
@@ -7,6 +8,12 @@ function fillerBreakdown(fillerWords: string[]): { word: string; count: number }
   return Array.from(counts.entries())
     .map(([word, count]) => ({ word, count }))
     .sort((a, b) => b.count - a.count);
+}
+
+function encouragement(score: number): string {
+  if (score >= 85) return "Great job — here's the breakdown.";
+  if (score >= 65) return "Solid answer — here's where you can sharpen it.";
+  return "Here's what to work on for next time.";
 }
 
 export default function AnswerFeedback({
@@ -27,13 +34,16 @@ export default function AnswerFeedback({
     <div className="mx-auto max-w-lg space-y-3">
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-900">Answer feedback</h2>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Answer feedback</h2>
+            <p className="mt-0.5 text-xs text-slate-500">{encouragement(analysis.overallScore)}</p>
+          </div>
           <p className={`text-2xl font-semibold tabular-nums ${scoreColor(analysis.overallScore)}`}>
-            {analysis.overallScore}
+            <CountUpNumber value={analysis.overallScore} />
             <span className="text-sm font-normal text-slate-400">/100</span>
           </p>
         </div>
-        <p className="mt-1 text-xs text-slate-500">&ldquo;{question.text}&rdquo;</p>
+        <p className="mt-2 text-xs text-slate-500">&ldquo;{question.text}&rdquo;</p>
 
         <ul className="mt-1 divide-y divide-slate-100">
           {analysis.metrics.map((m) => (
@@ -73,14 +83,14 @@ export default function AnswerFeedback({
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300"
+          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 active:scale-[0.98]"
         >
           Try again
         </button>
         <button
           type="button"
           onClick={onNext}
-          className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700"
+          className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 active:scale-[0.98]"
         >
           {isLastQuestion ? "Finish session" : "Next question"}
         </button>

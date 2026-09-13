@@ -20,6 +20,9 @@ const FACTOR_COPY: Record<Metric["key"], { detail: string }> = {
   engagement: {
     detail: "When camera analysis is on: the % of camera checks where your face was detected and roughly centred — a facing-the-camera proxy, not real gaze tracking.",
   },
+  vocalEnergy: {
+    detail: "How much your microphone volume varied while you spoke, measured directly from the audio. Flat volume scores lower; natural variation scores higher. This measures expressiveness, not confidence or emotion.",
+  },
 };
 
 const METRIC_LABELS: Record<Metric["key"], string> = {
@@ -28,6 +31,7 @@ const METRIC_LABELS: Record<Metric["key"], string> = {
   fillerControl: "Filler word control",
   structure: "Answer structure (STAR)",
   engagement: "Eye contact & engagement",
+  vocalEnergy: "Vocal energy",
 };
 
 export default function HowScoringWorksModal({ onClose }: { onClose: () => void }) {

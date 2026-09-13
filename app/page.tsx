@@ -8,7 +8,7 @@ import SessionSummary from "@/components/SessionSummary";
 import { analyzeAnswer } from "@/lib/analysis";
 import { pickNextQuestion } from "@/lib/questions";
 import { saveSession } from "@/lib/sessions";
-import type { AnsweredQuestion, Difficulty, EngagementSummary, JobType, Question, SessionRecord } from "@/lib/types";
+import type { AnsweredQuestion, Difficulty, EngagementSummary, JobType, Question, SessionRecord, VocalEnergySummary } from "@/lib/types";
 
 type Phase = "setup" | "asking" | "feedback" | "summary";
 
@@ -55,9 +55,17 @@ export default function Home() {
     durationSeconds: number,
     engagement: EngagementSummary | null,
     longestPauseSeconds: number,
+    vocalEnergy: VocalEnergySummary | null,
   ) {
     if (!currentQuestion) return;
-    const analysis = analyzeAnswer(transcript, durationSeconds, currentQuestion.starRelevant, engagement, longestPauseSeconds);
+    const analysis = analyzeAnswer(
+      transcript,
+      durationSeconds,
+      currentQuestion.starRelevant,
+      engagement,
+      longestPauseSeconds,
+      vocalEnergy,
+    );
     const answered: AnsweredQuestion = { question: currentQuestion, analysis };
 
     setDifficultyBeforeAnswer(difficulty);
@@ -117,28 +125,32 @@ export default function Home() {
 
   return (
     <main className="flex-1 px-4 py-10">
-      {phase === "setup" && <ScenarioPicker onStart={handleStart} />}
+      <div key={phase} className="animate-fade-in">
+        {phase === "setup" && <ScenarioPicker onStart={handleStart} />}
 
-      {phase === "asking" && currentQuestion && (
-        <QuestionCard
-          question={currentQuestion}
-          questionNumber={answers.length + 1}
-          totalQuestions={questionCount}
-          cameraEnabled={cameraEnabled}
-          onSubmit={handleSubmitAnswer}
-        />
-      )}
+        {phase === "asking" && currentQuestion && (
+          <QuestionCard
+            question={currentQuestion}
+            questionNumber={answers.length + 1}
+            totalQuestions={questionCount}
+            cameraEnabled={cameraEnabled}
+            onSubmit={handleSubmitAnswer}
+          />
+        )}
 
-      {phase === "feedback" && lastAnswered && (
-        <AnswerFeedback
-          answered={lastAnswered}
-          isLastQuestion={answers.length >= questionCount}
-          onNext={handleNext}
-          onRetry={handleRetry}
-        />
-      )}
+        {phase === "feedback" && lastAnswered && (
+          <AnswerFeedback
+            answered={lastAnswered}
+            isLastQuestion={answers.length >= questionCount}
+            onNext={handleNext}
+            onRetry={handleRetry}
+          />
+        )}
 
-      {phase === "summary" && <SessionSummary answers={answers} overallScore={overallScore} onPracticeAgain={handlePracticeAgain} />}
+        {phase === "summary" && (
+          <SessionSummary jobType={jobType} answers={answers} overallScore={overallScore} onPracticeAgain={handlePracticeAgain} />
+        )}
+      </div>
     </main>
   );
 }
