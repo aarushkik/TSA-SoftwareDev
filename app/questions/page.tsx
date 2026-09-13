@@ -13,6 +13,7 @@ import {
 import { allQuestions } from "@/lib/questions";
 import {
   CATEGORY_LABELS_BASE,
+  DIFFICULTY_BADGE_CLASSES,
   DIFFICULTY_LABELS,
   JOB_TYPE_LABELS,
   type CategoryFilter,
@@ -159,7 +160,7 @@ export default function QuestionsPage() {
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${DIFFICULTY_BADGE_CLASSES[q.difficulty]}`}>
                   {DIFFICULTY_LABELS[q.difficulty]}
                 </span>
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">

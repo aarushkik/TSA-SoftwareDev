@@ -6,7 +6,13 @@ import { getProfile } from "@/lib/profile";
 import { useFaceEngagement } from "@/lib/useFaceEngagement";
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
 import { useVocalEnergy } from "@/lib/useVocalEnergy";
-import { DIFFICULTY_LABELS, type EngagementSummary, type Question, type VocalEnergySummary } from "@/lib/types";
+import {
+  DIFFICULTY_BADGE_CLASSES,
+  DIFFICULTY_LABELS,
+  type EngagementSummary,
+  type Question,
+  type VocalEnergySummary,
+} from "@/lib/types";
 
 /** A rough, generous target range for a spoken interview answer — not a hard rule, just a visual nudge. */
 const IDEAL_MIN_SECONDS = 30;
@@ -147,7 +153,7 @@ export default function QuestionCard({
         <span className="text-xs font-medium text-slate-400">
           Question {questionNumber} of {totalQuestions}
         </span>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${DIFFICULTY_BADGE_CLASSES[question.difficulty]}`}>
           {DIFFICULTY_LABELS[question.difficulty]}
         </span>
       </div>

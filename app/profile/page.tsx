@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { addCustomQuestion } from "@/lib/customQuestions";
+import { parseJobPosting, questionsFromSkills } from "@/lib/jobPosting";
 import {
   addProfileExperience,
   getProfile,
@@ -16,6 +19,12 @@ export default function ProfilePage() {
   const [targetCompany, setTargetCompany] = useState("");
   const [newExperience, setNewExperience] = useState("");
   const [saved, setSaved] = useState(false);
+  const [postingText, setPostingText] = useState("");
+  const [parsedTitle, setParsedTitle] = useState("");
+  const [parsedSkills, setParsedSkills] = useState<string[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
+  const [hasParsed, setHasParsed] = useState(false);
+  const [tailorMessage, setTailorMessage] = useState<string | null>(null);
 
   // Seed the editable fields from storage once, on mount — after that the
   // inputs are locally controlled so re-renders from other store updates
@@ -39,6 +48,45 @@ export default function ProfilePage() {
     if (!text) return;
     addProfileExperience(text);
     setNewExperience("");
+  }
+
+  function handleParsePosting() {
+    const result = parseJobPosting(postingText);
+    setParsedTitle(result.title ?? "");
+    setParsedSkills(result.skills);
+    setSelectedSkills(new Set(result.skills));
+    setHasParsed(true);
+    setTailorMessage(null);
+  }
+
+  function toggleSkill(skill: string) {
+    setSelectedSkills((prev) => {
+      const next = new Set(prev);
+      if (next.has(skill)) next.delete(skill);
+      else next.add(skill);
+      return next;
+    });
+  }
+
+  function handleApplyTailoring() {
+    const chosen = parsedSkills.filter((s) => selectedSkills.has(s));
+    if (parsedTitle.trim()) {
+      updateProfileBasics(parsedTitle.trim(), targetCompany);
+      setTargetRole(parsedTitle.trim());
+    }
+    for (const question of questionsFromSkills(chosen)) {
+      addCustomQuestion(question);
+    }
+    setTailorMessage(
+      chosen.length > 0
+        ? `Added ${chosen.length} tailored question${chosen.length === 1 ? "" : "s"} to your question bank.`
+        : "Updated your target role.",
+    );
+    setPostingText("");
+    setParsedTitle("");
+    setParsedSkills([]);
+    setSelectedSkills(new Set());
+    setHasParsed(false);
   }
 
   return (
@@ -124,6 +172,94 @@ export default function ProfilePage() {
           >
             Add experience
           </button>
+        </section>
+
+        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
+          <p className="text-xs font-medium text-slate-600">Tailor to a job posting</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+            There&apos;s no LinkedIn connection here — LinkedIn doesn&apos;t offer a public API for pulling job
+            postings, and scraping one would break their terms of service. Instead, paste the posting text (from
+            LinkedIn or anywhere else) and this runs entirely in your browser: a title guess and a fixed list of
+            recognized skills, both shown to you before anything is saved.
+          </p>
+
+          <textarea
+            value={postingText}
+            onChange={(e) => setPostingText(e.target.value)}
+            rows={5}
+            placeholder="Paste the full job posting text here…"
+            className="mt-3 w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none placeholder:text-slate-400 focus:border-teal-600"
+          />
+          <button
+            type="button"
+            onClick={handleParsePosting}
+            disabled={!postingText.trim()}
+            className="mt-2 w-full rounded-lg bg-teal-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-teal-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          >
+            Extract details
+          </button>
+
+          {hasParsed && (
+            <div className="mt-3 space-y-3 rounded-lg bg-slate-50 p-3">
+              <div>
+                <label htmlFor="parsed-title" className="text-[11px] font-medium text-slate-500">
+                  Role title (edit if this guess is off)
+                </label>
+                <input
+                  id="parsed-title"
+                  type="text"
+                  value={parsedTitle}
+                  onChange={(e) => setParsedTitle(e.target.value)}
+                  placeholder="Couldn't guess a title — type one in"
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs outline-none placeholder:text-slate-400 focus:border-teal-600"
+                />
+              </div>
+
+              {parsedSkills.length > 0 ? (
+                <div>
+                  <p className="text-[11px] font-medium text-slate-500">
+                    Skills found — each becomes a tailored practice question
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {parsedSkills.map((skill) => (
+                      <button
+                        key={skill}
+                        type="button"
+                        onClick={() => toggleSkill(skill)}
+                        aria-pressed={selectedSkills.has(skill)}
+                        className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition active:scale-[0.98] ${
+                          selectedSkills.has(skill)
+                            ? "border-teal-600 bg-teal-50 text-teal-800"
+                            : "border-slate-200 text-slate-400 line-through hover:border-slate-300"
+                        }`}
+                      >
+                        {skill}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400">No recognized skill keywords found in that text.</p>
+              )}
+
+              <button
+                type="button"
+                onClick={handleApplyTailoring}
+                className="w-full rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-medium text-teal-700 transition hover:bg-teal-100 active:scale-[0.98]"
+              >
+                Apply
+              </button>
+            </div>
+          )}
+
+          {tailorMessage && (
+            <p className="mt-2 text-[11px] text-teal-700">
+              {tailorMessage}{" "}
+              <Link href="/questions" className="font-medium underline">
+                View question bank
+              </Link>
+            </p>
+          )}
         </section>
       </div>
     </main>

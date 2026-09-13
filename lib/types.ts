@@ -18,6 +18,13 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   advanced: "Advanced",
 };
 
+/** Consistent color coding for difficulty across the app — teal/amber/rose from easiest to hardest. */
+export const DIFFICULTY_BADGE_CLASSES: Record<Difficulty, string> = {
+  beginner: "bg-teal-50 text-teal-700",
+  intermediate: "bg-amber-50 text-amber-700",
+  advanced: "bg-rose-50 text-rose-700",
+};
+
 export type QuestionCategory = "general" | "behavioral" | "technical";
 export type CategoryFilter = QuestionCategory | "all";
 

@@ -80,6 +80,98 @@ function daysSince(iso: string): number {
   return Math.floor(ms / (1000 * 60 * 60 * 24));
 }
 
+/** Color coding for the difficulty control — matches the badge colors used everywhere else. */
+const DIFFICULTY_COLORS: Record<string, string> = {
+  adaptive: "border-indigo-600 bg-indigo-50 text-indigo-800",
+  beginner: "border-teal-600 bg-teal-50 text-teal-800",
+  intermediate: "border-amber-600 bg-amber-50 text-amber-800",
+  advanced: "border-rose-600 bg-rose-50 text-rose-800",
+};
+
+type InterviewFormat = {
+  id: string;
+  label: string;
+  description: string;
+  icon: ReactNode;
+  category: CategoryFilter;
+  questionCount: number;
+  fixedDifficulty: Difficulty | null;
+  cameraEnabled: boolean;
+  timeLimitSeconds: number | null;
+};
+
+/**
+ * Named presets that fill in several settings at once, so a session can
+ * feel like a specific kind of real interview instead of just a pile of
+ * dropdowns. Purely a quick-fill shortcut — every value it sets can still
+ * be changed individually afterward.
+ */
+const INTERVIEW_FORMATS: InterviewFormat[] = [
+  {
+    id: "phone",
+    label: "Phone Screen",
+    description: "Short, general-fit questions. No camera.",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+        <rect x="7" y="2" width="10" height="20" rx="2" />
+        <path d="M11 18h2" strokeLinecap="round" />
+      </svg>
+    ),
+    category: "general",
+    questionCount: 3,
+    fixedDifficulty: null,
+    cameraEnabled: false,
+    timeLimitSeconds: null,
+  },
+  {
+    id: "behavioral",
+    label: "Behavioral Round",
+    description: "STAR-style stories about your past experience.",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+        <path d="M21 12c0 4.4-4 8-9 8-1.1 0-2.2-.2-3.1-.5L4 21l1.3-3.8A7.9 7.9 0 013 12c0-4.4 4-8 9-8s9 3.6 9 8z" strokeLinejoin="round" />
+      </svg>
+    ),
+    category: "behavioral",
+    questionCount: 5,
+    fixedDifficulty: null,
+    cameraEnabled: false,
+    timeLimitSeconds: null,
+  },
+  {
+    id: "technical",
+    label: "Technical Round",
+    description: "Problem-solving and technical judgment.",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+        <path d="M9 8l-4 4 4 4M15 8l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    category: "technical",
+    questionCount: 5,
+    fixedDifficulty: "intermediate",
+    cameraEnabled: false,
+    timeLimitSeconds: null,
+  },
+  {
+    id: "panel",
+    label: "Panel / Final Round",
+    description: "Mixed, tougher questions on a hard time limit.",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+        <circle cx="8" cy="8" r="3" />
+        <circle cx="17" cy="9" r="2.5" />
+        <path d="M2.5 20c.7-3.6 3-5.5 5.5-5.5s4.8 1.9 5.5 5.5M14.5 20c.5-2.7 2-4.3 3.8-4.7" strokeLinecap="round" />
+      </svg>
+    ),
+    category: "all",
+    questionCount: 7,
+    fixedDifficulty: "advanced",
+    cameraEnabled: true,
+    timeLimitSeconds: 90,
+  },
+];
+
 export default function ScenarioPicker({ onStart }: { onStart: (options: StartOptions) => void }) {
   const sessions = useSyncExternalStore(subscribeSessions, getSessions, getSessionsServerSnapshot);
   const [jobType, setJobType] = useState<JobType>("general");
@@ -133,6 +225,14 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
     }
   }, []);
 
+  function applyFormat(format: InterviewFormat) {
+    setCategory(format.category);
+    setQuestionCount(format.questionCount);
+    setFixedDifficulty(format.fixedDifficulty);
+    setCameraEnabled(format.cameraEnabled);
+    setTimeLimitSeconds(format.timeLimitSeconds);
+  }
+
   function handleStart() {
     const options: StartOptions = {
       jobType,
@@ -183,14 +283,34 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
         </div>
       )}
 
+      <p className="mt-5 text-xs font-medium text-slate-600">Choose an interview format</p>
+      <p className="text-[11px] text-slate-400">A quick starting point — everything below is still yours to adjust.</p>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        {INTERVIEW_FORMATS.map((format) => (
+          <button
+            key={format.id}
+            type="button"
+            onClick={() => applyFormat(format)}
+            className="flex flex-col items-start gap-1 rounded-xl border border-slate-200 p-3 text-left transition hover:border-teal-300 hover:bg-teal-50/50 active:scale-[0.98]"
+          >
+            <span className="text-slate-500">{format.icon}</span>
+            <span className="text-xs font-semibold text-slate-800">{format.label}</span>
+            <span className="text-[11px] leading-snug text-slate-400">{format.description}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="mt-5 flex items-center justify-between">
         <p className="text-xs font-medium text-slate-600">What kind of role are you practicing for?</p>
         <button
           type="button"
           onClick={() => setJobType(JOB_TYPES[Math.floor(Math.random() * JOB_TYPES.length)])}
-          className="text-[11px] font-medium text-teal-700 hover:text-teal-800"
+          className="flex items-center gap-1 text-[11px] font-medium text-teal-700 hover:text-teal-800"
         >
-          🎲 Surprise me
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+            <path d="M4 4l7 7M4 20l16-16M4 12l6 6M14 18l6 6M20 4l-3 3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Surprise me
         </button>
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2">
@@ -250,37 +370,37 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
         ))}
       </div>
 
+      <p className="mt-5 text-xs font-medium text-slate-600">Difficulty</p>
+      <div className="mt-2 grid grid-cols-4 gap-1.5">
+        {DIFFICULTY_OPTIONS.map((d) => {
+          const key = d ?? "adaptive";
+          const active = fixedDifficulty === d;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setFixedDifficulty(d)}
+              aria-pressed={active}
+              className={`rounded-xl border px-2 py-2.5 text-center text-[11px] font-semibold transition active:scale-[0.98] ${
+                active ? DIFFICULTY_COLORS[key] : "border-slate-200 text-slate-500 hover:border-slate-300"
+              }`}
+            >
+              {d === null ? "Adaptive" : DIFFICULTY_LABELS[d]}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-1.5 text-[11px] text-slate-400">
+        {fixedDifficulty === null
+          ? "Starts at beginner and gets harder as you score well."
+          : `Every question stays at ${DIFFICULTY_LABELS[fixedDifficulty].toLowerCase()} difficulty.`}
+      </p>
+
       <details className="mt-5 rounded-xl border border-slate-200">
         <summary className="cursor-pointer list-none px-3.5 py-3 text-xs font-medium text-slate-600">
           More options
         </summary>
         <div className="space-y-4 border-t border-slate-100 px-3.5 py-3.5">
-          <div>
-            <p className="text-xs font-medium text-slate-600">Difficulty</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {DIFFICULTY_OPTIONS.map((d) => (
-                <button
-                  key={d ?? "adaptive"}
-                  type="button"
-                  onClick={() => setFixedDifficulty(d)}
-                  aria-pressed={fixedDifficulty === d}
-                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition active:scale-[0.98] ${
-                    fixedDifficulty === d
-                      ? "border-teal-600 bg-teal-50 text-teal-800"
-                      : "border-slate-200 text-slate-600 hover:border-slate-300"
-                  }`}
-                >
-                  {d === null ? "Adaptive" : DIFFICULTY_LABELS[d]}
-                </button>
-              ))}
-            </div>
-            <p className="mt-1 text-[11px] text-slate-400">
-              {fixedDifficulty === null
-                ? "Starts easy and gets harder as you score well."
-                : `Every question stays at ${DIFFICULTY_LABELS[fixedDifficulty].toLowerCase()} difficulty.`}
-            </p>
-          </div>
-
           <div>
             <label htmlFor="priority-select" className="text-xs font-medium text-slate-600">
               Focus scoring on
