@@ -3,6 +3,7 @@
 import { useRef, useState, useSyncExternalStore, type ChangeEvent } from "react";
 import CountUpNumber from "@/components/CountUpNumber";
 import { scoreColor } from "@/components/MetricBar";
+import PracticeHeatmap from "@/components/PracticeHeatmap";
 import ScoreTrendChart from "@/components/ScoreTrendChart";
 import { ACHIEVEMENTS, currentStreakDays, unlockedAchievements } from "@/lib/achievements";
 import {
@@ -114,6 +115,13 @@ export default function ProgressPage() {
                 <CountUpNumber value={avgFillers} />
               </p>
               <p className="mt-0.5 text-[11px] text-slate-500">Avg. fillers/session</p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+            <p className="text-xs font-medium text-slate-500">Practice activity</p>
+            <div className="mt-3">
+              <PracticeHeatmap sessions={sessions} />
             </div>
           </div>
 

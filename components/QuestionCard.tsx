@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFaceEngagement } from "@/lib/useFaceEngagement";
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
 import { useVocalEnergy } from "@/lib/useVocalEnergy";
 import { DIFFICULTY_LABELS, type EngagementSummary, type Question, type VocalEnergySummary } from "@/lib/types";
+
+/** A rough, generous target range for a spoken interview answer — not a hard rule, just a visual nudge. */
+const IDEAL_MIN_SECONDS = 30;
+const IDEAL_MAX_SECONDS = 90;
 
 export default function QuestionCard({
   question,
@@ -64,6 +68,24 @@ export default function QuestionCard({
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  const handleCancelRecording = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    stop();
+    if (cameraEnabled) face.stop();
+    energy.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- face/energy are re-created each render; only stop identity and cameraEnabled matter here
+  }, [stop, cameraEnabled]);
+
+  // Escape cancels an in-progress recording without submitting it — a quick way out if you started by mistake.
+  useEffect(() => {
+    if (state !== "listening") return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") handleCancelRecording();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [state, handleCancelRecording]);
 
   function handleStart() {
     startedAtRef.current = Date.now();
@@ -190,14 +212,45 @@ export default function QuestionCard({
                   </span>
                   Listening… {elapsed}s
                 </span>
-                <button
-                  type="button"
-                  onClick={handleStopAndSubmit}
-                  className="rounded-lg border border-rose-300 bg-white px-3 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-100 active:scale-[0.98]"
-                >
-                  Stop &amp; submit
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleCancelRecording}
+                    title="Cancel (Esc)"
+                    className="rounded-lg border border-transparent px-2.5 py-1 text-xs font-medium text-rose-500 transition hover:bg-rose-100 active:scale-[0.98]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStopAndSubmit}
+                    className="rounded-lg border border-rose-300 bg-white px-3 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-100 active:scale-[0.98]"
+                  >
+                    Stop &amp; submit
+                  </button>
+                </div>
               </div>
+
+              <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className={`h-full rounded-full transition-[width] duration-300 ease-out ${
+                    elapsed < IDEAL_MIN_SECONDS
+                      ? "bg-amber-400"
+                      : elapsed <= IDEAL_MAX_SECONDS
+                        ? "bg-teal-500"
+                        : "bg-rose-500"
+                  }`}
+                  style={{ width: `${Math.min(100, (elapsed / IDEAL_MAX_SECONDS) * 100)}%` }}
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-slate-400">
+                {elapsed < IDEAL_MIN_SECONDS
+                  ? `Aim for at least ${IDEAL_MIN_SECONDS}s — keep going.`
+                  : elapsed <= IDEAL_MAX_SECONDS
+                    ? "Good length — wrap up whenever you're ready."
+                    : "Getting long — consider wrapping up soon."}
+              </p>
+
               <div className="mt-3 min-h-16 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
                 {transcript || interim ? (
                   <>

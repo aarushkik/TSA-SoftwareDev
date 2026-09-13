@@ -95,6 +95,15 @@ export default function SessionSummary({
     answers.reduce((sum, a) => sum + a.analysis.wordsPerMinute, 0) / Math.max(1, answers.length),
   );
 
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+  function handleShare() {
+    const text = buildSummaryText(jobType, answers, overallScore, averages);
+    navigator.share({ title: "Interview Coach — Practice Session Summary", text }).catch(() => {
+      // The user cancelled the share sheet, or the platform rejected it — nothing to do.
+    });
+  }
+
   function handleCopySummary() {
     const text = buildSummaryText(jobType, answers, overallScore, averages);
     navigator.clipboard?.writeText(text).then(() => {
@@ -186,6 +195,15 @@ export default function SessionSummary({
         >
           {copied ? "Copied!" : "Copy summary"}
         </button>
+        {canShare && (
+          <button
+            type="button"
+            onClick={handleShare}
+            className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-500 transition hover:border-slate-300 hover:text-slate-700 active:scale-[0.98]"
+          >
+            Share
+          </button>
+        )}
         <button
           type="button"
           onClick={() => window.print()}
