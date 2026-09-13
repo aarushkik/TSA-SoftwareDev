@@ -59,7 +59,20 @@ export default function ScenarioPicker({
         pace, filler words, and answer structure, measured directly from what you said.
       </p>
 
-      <p className="mt-6 text-xs font-medium text-slate-600">What kind of role are you practicing for?</p>
+      <div className="mt-4 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="mt-0.5 shrink-0 text-slate-400" aria-hidden>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 16v-5" strokeLinecap="round" />
+          <circle cx="12" cy="8.2" r="0.6" fill="currentColor" stroke="none" />
+        </svg>
+        <p className="text-xs leading-relaxed text-slate-500">
+          Works best in <span className="font-medium text-slate-700">Chrome or Edge</span>. When you click &ldquo;Start
+          answering,&rdquo; your browser will ask for microphone access (and camera access too, if camera analysis is
+          on) — click Allow. Other browsers fall back to typing your answer instead.
+        </p>
+      </div>
+
+      <p className="mt-5 text-xs font-medium text-slate-600">What kind of role are you practicing for?</p>
       <div className="mt-2 grid grid-cols-2 gap-2">
         {JOB_TYPES.map((type) => (
           <button
