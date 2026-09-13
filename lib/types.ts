@@ -1,0 +1,77 @@
+/** Shared types for Interview Coach. Kept deliberately small. */
+
+export type JobType = "general" | "technology" | "business" | "customer_service" | "creative";
+
+export const JOB_TYPE_LABELS: Record<JobType, string> = {
+  general: "General / Any field",
+  technology: "Technology",
+  business: "Business",
+  customer_service: "Customer Service",
+  creative: "Creative",
+};
+
+export type Difficulty = "beginner" | "intermediate" | "advanced";
+
+export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+  beginner: "Beginner",
+  intermediate: "Intermediate",
+  advanced: "Advanced",
+};
+
+export type QuestionCategory = "general" | "behavioral" | "technical";
+
+export type Question = {
+  id: string;
+  text: string;
+  category: QuestionCategory;
+  difficulty: Difficulty;
+  /** Which job types this question applies to; "general" applies to all. */
+  jobTypes: JobType[];
+  /** Behavioral questions are the ones STAR-structure detection applies to. */
+  starRelevant: boolean;
+  /** Shown to the user as a realistic follow-up after a strong answer, at advanced difficulty. */
+  followUp?: string;
+};
+
+/** One measured sub-score behind the overall score — always shown with the raw numbers that produced it. */
+export type Metric = {
+  key: "communication" | "pace" | "fillerControl" | "structure" | "engagement";
+  label: string;
+  /** 0-100, higher is better. */
+  score: number;
+  /** Human sentence built from the same numbers that produced the score. */
+  detail: string;
+  available: boolean;
+};
+
+export type StarParts = {
+  situation: boolean;
+  task: boolean;
+  action: boolean;
+  result: boolean;
+};
+
+export type AnswerAnalysis = {
+  transcript: string;
+  wordCount: number;
+  durationSeconds: number;
+  wordsPerMinute: number;
+  fillerWordCount: number;
+  fillerWords: string[];
+  starParts: StarParts | null;
+  metrics: Metric[];
+  overallScore: number;
+};
+
+export type AnsweredQuestion = {
+  question: Question;
+  analysis: AnswerAnalysis;
+};
+
+export type SessionRecord = {
+  id: string;
+  completedAt: string;
+  jobType: JobType;
+  answers: AnsweredQuestion[];
+  overallScore: number;
+};
