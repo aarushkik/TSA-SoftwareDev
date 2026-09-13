@@ -19,6 +19,7 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 };
 
 export type QuestionCategory = "general" | "behavioral" | "technical";
+export type CategoryFilter = QuestionCategory | "all";
 
 export type Question = {
   id: string;
@@ -89,4 +90,17 @@ export type SessionRecord = {
   jobType: JobType;
   answers: AnsweredQuestion[];
   overallScore: number;
+};
+
+/** Everything chosen on the setup screen, bundled so the callback doesn't grow a new positional parameter per option. */
+export type StartOptions = {
+  jobType: JobType;
+  questionCount: number;
+  cameraEnabled: boolean;
+  category: CategoryFilter;
+  /** null = balanced weighting across every metric. */
+  priority: Metric["key"] | null;
+  /** null = adaptive difficulty, starting at beginner. */
+  fixedDifficulty: Difficulty | null;
+  readAloud: boolean;
 };

@@ -44,14 +44,37 @@ const MIN_VOCAL_SAMPLES = 5;
  */
 const VOCAL_CV_FOR_FULL_SCORE = 0.28;
 
-export const WEIGHTS = {
+export const WEIGHTS: Record<Metric["key"], number> = {
   communication: 0.2,
   pace: 0.18,
   fillerControl: 0.17,
   structure: 0.17,
   engagement: 0.13,
   vocalEnergy: 0.15,
-} as const;
+};
+
+/** How much weight a stated priority adds to its metric; the rest of the table scales down proportionally so it still sums to 1. */
+const PRIORITY_BOOST = 0.12;
+
+/**
+ * The weight table for a given session: the base table, optionally tilted
+ * toward one metric a walker — a practicer, here — said matters most to
+ * them. This never changes how any metric is measured, only how much it
+ * counts toward the overall score.
+ */
+export function buildWeights(priority: Metric["key"] | null = null): Record<Metric["key"], number> {
+  if (!priority) return { ...WEIGHTS };
+
+  const boosted = Math.min(0.6, WEIGHTS[priority] + PRIORITY_BOOST);
+  const othersBefore = 1 - WEIGHTS[priority];
+  const othersAfter = 1 - boosted;
+
+  const out = {} as Record<Metric["key"], number>;
+  for (const key of Object.keys(WEIGHTS) as Metric["key"][]) {
+    out[key] = key === priority ? boosted : othersBefore > 0 ? WEIGHTS[key] * (othersAfter / othersBefore) : 0;
+  }
+  return out;
+}
 
 function clamp(n: number, lo = 0, hi = 100): number {
   return Math.max(lo, Math.min(hi, n));
@@ -98,6 +121,7 @@ export function analyzeAnswer(
   engagement: EngagementSummary | null = null,
   longestPauseSeconds = 0,
   vocalEnergy: VocalEnergySummary | null = null,
+  weights: Record<Metric["key"], number> = WEIGHTS,
 ): AnswerAnalysis {
   const wordCount = countWords(transcript);
   const fillerWords = findFillerWords(transcript);
@@ -251,7 +275,7 @@ export function analyzeAnswer(
   // the weights always sum to 1 and the score never counts an unmeasured metric.
   const availableWeight = metrics
     .filter((m) => m.available)
-    .reduce((sum, m) => sum + WEIGHTS[m.key], 0);
+    .reduce((sum, m) => sum + weights[m.key], 0);
 
   const finalMetrics: Metric[] = metrics.map((m) => ({
     ...m,
@@ -263,7 +287,7 @@ export function analyzeAnswer(
       ? Math.round(
           finalMetrics
             .filter((m) => m.available)
-            .reduce((sum, m) => sum + m.score * (WEIGHTS[m.key] / availableWeight), 0),
+            .reduce((sum, m) => sum + m.score * (weights[m.key] / availableWeight), 0),
         )
       : 0;
 

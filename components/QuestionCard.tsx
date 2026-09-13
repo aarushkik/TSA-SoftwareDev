@@ -11,12 +11,14 @@ export default function QuestionCard({
   questionNumber,
   totalQuestions,
   cameraEnabled,
+  readAloud,
   onSubmit,
 }: {
   question: Question;
   questionNumber: number;
   totalQuestions: number;
   cameraEnabled: boolean;
+  readAloud: boolean;
   onSubmit: (
     transcript: string,
     durationSeconds: number,
@@ -30,9 +32,32 @@ export default function QuestionCard({
   const energy = useVocalEnergy();
   const [typedAnswer, setTypedAnswer] = useState("");
   const [elapsed, setElapsed] = useState(0);
+  const [reading, setReading] = useState(false);
   const startedAtRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canSpeak = typeof window !== "undefined" && "speechSynthesis" in window;
+
+  function speakQuestion() {
+    if (!canSpeak) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(question.text);
+    utterance.rate = 1.0;
+    utterance.onstart = () => setReading(true);
+    utterance.onend = () => setReading(false);
+    utterance.onerror = () => setReading(false);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  // Reads the question aloud automatically when it changes, if enabled —
+  // a real side effect (Web Speech API), not React state, so it's fine here.
+  useEffect(() => {
+    if (readAloud) speakQuestion();
+    return () => {
+      if (canSpeak) window.speechSynthesis.cancel();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-speak when the question itself changes
+  }, [question.id, readAloud]);
 
   useEffect(() => {
     return () => {
@@ -78,7 +103,25 @@ export default function QuestionCard({
         </span>
       </div>
 
-      <p className="mt-3 text-lg font-medium leading-snug text-slate-900">{question.text}</p>
+      <div className="mt-3 flex items-start justify-between gap-2">
+        <p className="text-lg font-medium leading-snug text-slate-900">{question.text}</p>
+        {canSpeak && (
+          <button
+            type="button"
+            onClick={speakQuestion}
+            aria-label="Read question aloud"
+            title="Read question aloud"
+            className={`shrink-0 rounded-full p-1.5 transition active:scale-[0.98] ${
+              reading ? "bg-teal-50 text-teal-600" : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            }`}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+              <path d="M4 9v6h4l5 5V4L8 9H4z" strokeLinejoin="round" />
+              <path d="M16.5 8.5a5 5 0 010 7M19 6a9 9 0 010 12" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
+      </div>
 
       {cameraEnabled && (
         <div className="mt-4 flex items-center gap-3">

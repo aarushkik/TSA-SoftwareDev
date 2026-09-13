@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { analyzeAnswer, WEIGHTS } from "./analysis.ts";
+import { analyzeAnswer, buildWeights, WEIGHTS } from "./analysis.ts";
 
 function metric(analysis: ReturnType<typeof analyzeAnswer>, key: string) {
   const m = analysis.metrics.find((m) => m.key === key);
@@ -11,6 +11,30 @@ function metric(analysis: ReturnType<typeof analyzeAnswer>, key: string) {
 test("the metric weights sum to 1", () => {
   const total = Object.values(WEIGHTS).reduce((sum, w) => sum + w, 0);
   assert.ok(Math.abs(total - 1) < 1e-9, `expected weights to sum to 1, got ${total}`);
+});
+
+test("buildWeights with no priority returns the base table", () => {
+  assert.deepEqual(buildWeights(null), WEIGHTS);
+});
+
+test("buildWeights tilts toward a priority and still sums to 1", () => {
+  const weights = buildWeights("pace");
+  const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
+  assert.ok(Math.abs(total - 1) < 1e-9);
+  assert.ok(weights.pace > WEIGHTS.pace);
+  for (const key of Object.keys(weights) as (keyof typeof weights)[]) {
+    if (key !== "pace") assert.ok(weights[key] < WEIGHTS[key]);
+  }
+});
+
+test("a stated priority pulls the overall score toward that metric's sub-score", () => {
+  // Strong pace, weak everything else measurable.
+  const text = Array(60).fill("word").join(" "); // enough words, no fillers, no STAR cues
+  const weightedTowardPace = analyzeAnswer(text, 30, false, null, 0, null, buildWeights("pace"));
+  const balanced = analyzeAnswer(text, 30, false, null, 0, null, WEIGHTS);
+  // 60 words / 30s = 120 wpm, inside the ideal range, so pace scores well —
+  // prioritizing it should pull the overall score up relative to balanced weights.
+  assert.ok(weightedTowardPace.overallScore >= balanced.overallScore);
 });
 
 test("an empty response scores nothing and every metric is unavailable or zero", () => {

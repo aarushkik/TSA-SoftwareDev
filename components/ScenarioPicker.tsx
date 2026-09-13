@@ -1,10 +1,38 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { JOB_TYPE_LABELS, type JobType } from "@/lib/types";
+import {
+  DIFFICULTY_LABELS,
+  JOB_TYPE_LABELS,
+  type CategoryFilter,
+  type Difficulty,
+  type JobType,
+  type Metric,
+  type StartOptions,
+} from "@/lib/types";
 
 const JOB_TYPES = Object.keys(JOB_TYPE_LABELS) as JobType[];
 const QUESTION_COUNTS = [3, 5, 7];
+
+const CATEGORY_LABELS: Record<CategoryFilter, string> = {
+  all: "All",
+  general: "General",
+  behavioral: "Behavioral",
+  technical: "Technical",
+};
+const CATEGORIES = Object.keys(CATEGORY_LABELS) as CategoryFilter[];
+
+const DIFFICULTY_OPTIONS: (Difficulty | null)[] = [null, "beginner", "intermediate", "advanced"];
+
+const PRIORITY_LABELS: Record<Metric["key"], string> = {
+  communication: "Response substance",
+  pace: "Speaking pace",
+  fillerControl: "Filler word control",
+  structure: "Answer structure",
+  engagement: "Eye contact & engagement",
+  vocalEnergy: "Vocal energy",
+};
+const PRIORITY_OPTIONS: (Metric["key"] | null)[] = [null, ...(Object.keys(PRIORITY_LABELS) as Metric["key"][])];
 
 const JOB_TYPE_ICONS: Record<JobType, ReactNode> = {
   general: (
@@ -42,14 +70,14 @@ const JOB_TYPE_ICONS: Record<JobType, ReactNode> = {
   ),
 };
 
-export default function ScenarioPicker({
-  onStart,
-}: {
-  onStart: (jobType: JobType, questionCount: number, cameraEnabled: boolean) => void;
-}) {
+export default function ScenarioPicker({ onStart }: { onStart: (options: StartOptions) => void }) {
   const [jobType, setJobType] = useState<JobType>("general");
   const [questionCount, setQuestionCount] = useState(5);
   const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [category, setCategory] = useState<CategoryFilter>("all");
+  const [priority, setPriority] = useState<Metric["key"] | null>(null);
+  const [fixedDifficulty, setFixedDifficulty] = useState<Difficulty | null>(null);
+  const [readAloud, setReadAloud] = useState(false);
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-6">
@@ -111,7 +139,93 @@ export default function ScenarioPicker({
         ))}
       </div>
 
-      <label className="mt-5 flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
+      <p className="mt-5 text-xs font-medium text-slate-600">Question category</p>
+      <div className="mt-2 flex gap-2">
+        {CATEGORIES.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => setCategory(c)}
+            aria-pressed={category === c}
+            className={`flex-1 rounded-xl border px-2 py-2 text-xs font-medium transition active:scale-[0.98] ${
+              category === c
+                ? "border-teal-600 bg-teal-50 text-teal-800"
+                : "border-slate-200 text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            {CATEGORY_LABELS[c]}
+          </button>
+        ))}
+      </div>
+
+      <details className="mt-5 rounded-xl border border-slate-200">
+        <summary className="cursor-pointer list-none px-3.5 py-3 text-xs font-medium text-slate-600">
+          More options
+        </summary>
+        <div className="space-y-4 border-t border-slate-100 px-3.5 py-3.5">
+          <div>
+            <p className="text-xs font-medium text-slate-600">Difficulty</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {DIFFICULTY_OPTIONS.map((d) => (
+                <button
+                  key={d ?? "adaptive"}
+                  type="button"
+                  onClick={() => setFixedDifficulty(d)}
+                  aria-pressed={fixedDifficulty === d}
+                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition active:scale-[0.98] ${
+                    fixedDifficulty === d
+                      ? "border-teal-600 bg-teal-50 text-teal-800"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  {d === null ? "Adaptive" : DIFFICULTY_LABELS[d]}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">
+              {fixedDifficulty === null
+                ? "Starts easy and gets harder as you score well."
+                : `Every question stays at ${DIFFICULTY_LABELS[fixedDifficulty].toLowerCase()} difficulty.`}
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="priority-select" className="text-xs font-medium text-slate-600">
+              Focus scoring on
+            </label>
+            <select
+              id="priority-select"
+              value={priority ?? ""}
+              onChange={(e) => setPriority((e.target.value || null) as Metric["key"] | null)}
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-teal-600"
+            >
+              <option value="">Balanced (default)</option>
+              {PRIORITY_OPTIONS.filter((p): p is Metric["key"] => p !== null).map((p) => (
+                <option key={p} value={p}>
+                  {PRIORITY_LABELS[p]}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-slate-400">Weights that metric more heavily in your overall score.</p>
+          </div>
+
+          <label className="flex cursor-pointer items-center justify-between">
+            <span className="text-xs font-medium text-slate-700">Read questions aloud</span>
+            <span className="relative inline-flex h-5 w-9 shrink-0 items-center">
+              <input
+                type="checkbox"
+                checked={readAloud}
+                onChange={(e) => setReadAloud(e.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-teal-600" />
+              <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-4" />
+            </span>
+          </label>
+        </div>
+      </details>
+
+      <label className="mt-3 flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
         <span className="min-w-0 pr-3">
           <span className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
             Enable camera analysis
@@ -135,7 +249,9 @@ export default function ScenarioPicker({
 
       <button
         type="button"
-        onClick={() => onStart(jobType, questionCount, cameraEnabled)}
+        onClick={() =>
+          onStart({ jobType, questionCount, cameraEnabled, category, priority, fixedDifficulty, readAloud })
+        }
         className="mt-4 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 active:scale-[0.98]"
       >
         Start practice session

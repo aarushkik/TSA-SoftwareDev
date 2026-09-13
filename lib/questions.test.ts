@@ -36,3 +36,22 @@ test("pickNextQuestion falls back to another tier once a tier is exhausted", () 
   assert.ok(next, "expected a fallback question from another tier");
   assert.ok(!beginnerIds.has(next.id));
 });
+
+test("a category filter only returns questions in that category", () => {
+  const pool = questionsFor("general", "intermediate", "behavioral");
+  assert.ok(pool.length > 0);
+  assert.ok(pool.every((q) => q.category === "behavioral"));
+});
+
+test("extra (custom) questions are included alongside the built-in bank", () => {
+  const custom = {
+    id: "custom-1",
+    text: "A custom question",
+    category: "general" as const,
+    difficulty: "beginner" as const,
+    jobTypes: ["general" as const],
+    starRelevant: false,
+  };
+  const pool = questionsFor("general", "beginner", "all", [custom]);
+  assert.ok(pool.some((q) => q.id === "custom-1"));
+});

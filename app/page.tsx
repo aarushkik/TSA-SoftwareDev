@@ -5,10 +5,21 @@ import AnswerFeedback from "@/components/AnswerFeedback";
 import QuestionCard from "@/components/QuestionCard";
 import ScenarioPicker from "@/components/ScenarioPicker";
 import SessionSummary from "@/components/SessionSummary";
-import { analyzeAnswer } from "@/lib/analysis";
+import { analyzeAnswer, buildWeights } from "@/lib/analysis";
 import { pickNextQuestion } from "@/lib/questions";
 import { saveSession } from "@/lib/sessions";
-import type { AnsweredQuestion, Difficulty, EngagementSummary, JobType, Question, SessionRecord, VocalEnergySummary } from "@/lib/types";
+import type {
+  AnsweredQuestion,
+  CategoryFilter,
+  Difficulty,
+  EngagementSummary,
+  JobType,
+  Metric,
+  Question,
+  SessionRecord,
+  StartOptions,
+  VocalEnergySummary,
+} from "@/lib/types";
 
 type Phase = "setup" | "asking" | "feedback" | "summary";
 
@@ -26,6 +37,10 @@ export default function Home() {
   const [jobType, setJobType] = useState<JobType>("general");
   const [questionCount, setQuestionCount] = useState(5);
   const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [category, setCategory] = useState<CategoryFilter>("all");
+  const [priority, setPriority] = useState<Metric["key"] | null>(null);
+  const [fixedDifficulty, setFixedDifficulty] = useState<Difficulty | null>(null);
+  const [readAloud, setReadAloud] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>("beginner");
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [askedIds, setAskedIds] = useState<Set<string>>(new Set());
@@ -35,14 +50,18 @@ export default function Home() {
   // can undo that shift instead of compounding two adjustments for one question.
   const [difficultyBeforeAnswer, setDifficultyBeforeAnswer] = useState<Difficulty>("beginner");
 
-  function handleStart(selectedJobType: JobType, selectedCount: number, selectedCameraEnabled: boolean) {
-    const startDifficulty: Difficulty = "beginner";
-    const first = pickNextQuestion(selectedJobType, startDifficulty, new Set());
+  function handleStart(options: StartOptions) {
+    const startDifficulty: Difficulty = options.fixedDifficulty ?? "beginner";
+    const first = pickNextQuestion(options.jobType, startDifficulty, new Set(), options.category);
     if (!first) return;
 
-    setJobType(selectedJobType);
-    setQuestionCount(selectedCount);
-    setCameraEnabled(selectedCameraEnabled);
+    setJobType(options.jobType);
+    setQuestionCount(options.questionCount);
+    setCameraEnabled(options.cameraEnabled);
+    setCategory(options.category);
+    setPriority(options.priority);
+    setFixedDifficulty(options.fixedDifficulty);
+    setReadAloud(options.readAloud);
     setDifficulty(startDifficulty);
     setAskedIds(new Set([first.id]));
     setAnswers([]);
@@ -65,12 +84,17 @@ export default function Home() {
       engagement,
       longestPauseSeconds,
       vocalEnergy,
+      buildWeights(priority),
     );
     const answered: AnsweredQuestion = { question: currentQuestion, analysis };
 
     setDifficultyBeforeAnswer(difficulty);
     setAnswers((prev) => [...prev, answered]);
-    setDifficulty((d) => nextDifficulty(d, analysis.overallScore));
+    // A fixed difficulty means every question in the session stays at that
+    // tier — no adaptive movement to undo.
+    if (fixedDifficulty === null) {
+      setDifficulty((d) => nextDifficulty(d, analysis.overallScore));
+    }
     setLastAnswered(answered);
     setPhase("feedback");
   }
@@ -101,7 +125,7 @@ export default function Home() {
       return;
     }
 
-    const next = pickNextQuestion(jobType, difficulty, askedIds);
+    const next = pickNextQuestion(jobType, difficulty, askedIds, category);
     if (!next) {
       // Ran out of unique questions for this scenario — end the session early.
       handleNext();
@@ -134,6 +158,7 @@ export default function Home() {
             questionNumber={answers.length + 1}
             totalQuestions={questionCount}
             cameraEnabled={cameraEnabled}
+            readAloud={readAloud}
             onSubmit={handleSubmitAnswer}
           />
         )}

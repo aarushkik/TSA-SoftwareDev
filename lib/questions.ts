@@ -1,4 +1,4 @@
-import type { Difficulty, JobType, Question } from "./types";
+import type { CategoryFilter, Difficulty, JobType, Question } from "./types";
 
 export const QUESTIONS: Question[] = [
   // Beginner — general
@@ -353,14 +353,28 @@ export const QUESTIONS: Question[] = [
   },
 ];
 
-export function questionsFor(jobType: JobType, difficulty: Difficulty): Question[] {
-  return QUESTIONS.filter(
-    (q) => q.difficulty === difficulty && (q.jobTypes.includes(jobType) || q.jobTypes.includes("general")),
+export function questionsFor(
+  jobType: JobType,
+  difficulty: Difficulty,
+  category: CategoryFilter = "all",
+  extraQuestions: Question[] = [],
+): Question[] {
+  return [...QUESTIONS, ...extraQuestions].filter(
+    (q) =>
+      q.difficulty === difficulty &&
+      (q.jobTypes.includes(jobType) || q.jobTypes.includes("general")) &&
+      (category === "all" || q.category === category),
   );
 }
 
 /** A question not already asked this session, preferring the requested difficulty and falling back one tier if that pool is empty. */
-export function pickNextQuestion(jobType: JobType, difficulty: Difficulty, askedIds: Set<string>): Question | null {
+export function pickNextQuestion(
+  jobType: JobType,
+  difficulty: Difficulty,
+  askedIds: Set<string>,
+  category: CategoryFilter = "all",
+  extraQuestions: Question[] = [],
+): Question | null {
   const tiers: Difficulty[] = difficulty === "advanced"
     ? ["advanced", "intermediate", "beginner"]
     : difficulty === "intermediate"
@@ -368,7 +382,7 @@ export function pickNextQuestion(jobType: JobType, difficulty: Difficulty, asked
       : ["beginner", "intermediate", "advanced"];
 
   for (const tier of tiers) {
-    const pool = questionsFor(jobType, tier).filter((q) => !askedIds.has(q.id));
+    const pool = questionsFor(jobType, tier, category, extraQuestions).filter((q) => !askedIds.has(q.id));
     if (pool.length > 0) return pool[Math.floor(Math.random() * pool.length)];
   }
   return null;
