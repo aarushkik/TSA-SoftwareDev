@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSyncExternalStore } from "react";
+import Select from "@/components/Select";
 import {
   addCustomQuestion,
   getCustomQuestions,
@@ -86,39 +87,31 @@ export default function QuestionsPage() {
         </p>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <select
-            value={jobFilter}
-            onChange={(e) => setJobFilter(e.target.value as JobType | "all")}
-            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-teal-600"
-          >
+          <Select value={jobFilter} onChange={(e) => setJobFilter(e.target.value as JobType | "all")} className="w-40">
             {JOB_FILTERS.map((t) => (
               <option key={t} value={t}>
                 {t === "all" ? "Any role" : JOB_TYPE_LABELS[t]}
               </option>
             ))}
-          </select>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)}
-            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-teal-600"
-          >
+          </Select>
+          <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)} className="w-36">
             {CATEGORY_FILTERS.map((c) => (
               <option key={c} value={c}>
                 {c === "all" ? "Any category" : CATEGORY_LABELS_BASE[c]}
               </option>
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
             value={difficultyFilter}
             onChange={(e) => setDifficultyFilter(e.target.value as Difficulty | "all")}
-            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-teal-600"
+            className="w-40"
           >
             {DIFFICULTY_FILTERS.map((d) => (
               <option key={d} value={d}>
                 {d === "all" ? "Any difficulty" : DIFFICULTY_LABELS[d]}
               </option>
             ))}
-          </select>
+          </Select>
           <input
             type="text"
             value={search}
@@ -204,28 +197,20 @@ export default function QuestionsPage() {
                 className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-teal-600"
               />
               <div className="flex flex-wrap gap-2">
-                <select
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value as QuestionCategory)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-teal-600"
-                >
+                <Select value={newCategory} onChange={(e) => setNewCategory(e.target.value as QuestionCategory)} className="w-36">
                   {(["general", "behavioral", "technical"] as QuestionCategory[]).map((c) => (
                     <option key={c} value={c}>
                       {CATEGORY_LABELS_BASE[c]}
                     </option>
                   ))}
-                </select>
-                <select
-                  value={newDifficulty}
-                  onChange={(e) => setNewDifficulty(e.target.value as Difficulty)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-teal-600"
-                >
+                </Select>
+                <Select value={newDifficulty} onChange={(e) => setNewDifficulty(e.target.value as Difficulty)} className="w-36">
                   {(["beginner", "intermediate", "advanced"] as Difficulty[]).map((d) => (
                     <option key={d} value={d}>
                       {DIFFICULTY_LABELS[d]}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div>
                 <p className="text-[11px] font-medium text-slate-500">Applies to</p>

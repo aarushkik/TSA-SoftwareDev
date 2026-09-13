@@ -32,7 +32,7 @@ export default function SessionDetailPage() {
           ← Back to progress
         </Link>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 text-center">
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 text-center">
           <p className="text-xs text-slate-500">
             {JOB_TYPE_LABELS[session.jobType]} ·{" "}
             {new Date(session.completedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
@@ -47,7 +47,7 @@ export default function SessionDetailPage() {
         </section>
 
         {session.answers.map((a, i) => (
-          <section key={`${session.id}-${i}`} className="rounded-2xl border border-slate-200 bg-white p-5">
+          <section key={`${session.id}-${i}`} className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-slate-400">
                 Question {i + 1} · {DIFFICULTY_LABELS[a.question.difficulty]}

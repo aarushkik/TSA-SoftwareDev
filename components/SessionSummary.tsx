@@ -112,7 +112,7 @@ export default function SessionSummary({
 
   return (
     <div className="mx-auto max-w-lg space-y-3">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 text-center">
         <p className="text-xs font-medium text-slate-500">{sessionEncouragement(overallScore)}</p>
         <p className={`mt-1 text-4xl font-bold tabular-nums ${scoreColor(overallScore)}`}>
           <CountUpNumber value={overallScore} />
@@ -151,7 +151,7 @@ export default function SessionSummary({
       )}
 
       {weakest && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4">
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
           <p className="text-xs font-medium text-slate-600">Recommended practice</p>
           <p className="mt-1 text-sm text-slate-800">{METRIC_TIPS[weakest.key]}</p>
           <p className="mt-1 text-xs text-slate-400">
@@ -161,7 +161,7 @@ export default function SessionSummary({
       )}
 
       {sessionId && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 print:hidden">
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 print:hidden">
           <label htmlFor="session-notes" className="text-xs font-medium text-slate-600">
             Reflection notes
           </label>

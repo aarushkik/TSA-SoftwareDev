@@ -70,7 +70,7 @@ export default function AnswerFeedback({
 
   return (
     <div className="mx-auto max-w-lg space-y-3">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-slate-900">Answer feedback</h2>

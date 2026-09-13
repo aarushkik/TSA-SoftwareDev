@@ -98,7 +98,7 @@ export default function ProfilePage() {
           your own experiences for a behavioral question.
         </p>
 
-        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
+        <section className="mt-5 rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
           <p className="text-xs font-medium text-slate-600">What are you practicing for?</p>
           <div className="mt-2 space-y-2">
             <input
@@ -125,7 +125,7 @@ export default function ProfilePage() {
           </button>
         </section>
 
-        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
+        <section className="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
           <p className="text-xs font-medium text-slate-600">Your experiences</p>
           <p className="mt-1 text-[11px] text-slate-400">
             A few real stories you could tell — a project, a challenge, a time you led or failed at something. Hints
@@ -174,7 +174,7 @@ export default function ProfilePage() {
           </button>
         </section>
 
-        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
+        <section className="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
           <p className="text-xs font-medium text-slate-600">Tailor to a job posting</p>
           <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
             There&apos;s no LinkedIn connection here — LinkedIn doesn&apos;t offer a public API for pulling job

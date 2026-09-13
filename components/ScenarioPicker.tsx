@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useSyncExternalStore } from "react";
+import Select from "@/components/Select";
 import { getSessions, getSessionsServerSnapshot, subscribeSessions } from "@/lib/sessions";
 import {
   DIFFICULTY_LABELS,
@@ -15,7 +16,8 @@ import {
 } from "@/lib/types";
 
 const JOB_TYPES = Object.keys(JOB_TYPE_LABELS) as JobType[];
-const QUESTION_COUNTS = [3, 5, 7];
+const QUESTION_COUNT_PRESETS = [3, 5, 7, 10, 15];
+const MAX_QUESTION_COUNT = 30;
 
 const CATEGORY_LABELS: Record<CategoryFilter, string> = {
   all: "All",
@@ -256,7 +258,7 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
   }
 
   return (
-    <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-6">
+    <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
       <h1 className="text-xl font-semibold text-slate-900">Start a practice session</h1>
       <p className="mt-1.5 text-sm text-slate-500">
         Answer realistic interview questions out loud and get an immediate, transparent breakdown of your response —
@@ -333,14 +335,14 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
       </div>
 
       <p className="mt-5 text-xs font-medium text-slate-600">How many questions?</p>
-      <div className="mt-2 flex gap-2">
-        {QUESTION_COUNTS.map((count) => (
+      <div className="mt-2 flex flex-wrap gap-2">
+        {QUESTION_COUNT_PRESETS.map((count) => (
           <button
             key={count}
             type="button"
             onClick={() => setQuestionCount(count)}
             aria-pressed={questionCount === count}
-            className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition active:scale-[0.98] ${
+            className={`min-w-[42px] flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition active:scale-[0.98] ${
               questionCount === count
                 ? "border-teal-600 bg-teal-50 text-teal-800"
                 : "border-slate-200 text-slate-600 hover:border-slate-300"
@@ -349,7 +351,31 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
             {count}
           </button>
         ))}
+        <div
+          className={`flex min-w-[64px] flex-1 items-center justify-center gap-1 rounded-xl border px-2 py-2.5 transition ${
+            QUESTION_COUNT_PRESETS.includes(questionCount)
+              ? "border-slate-200 text-slate-400"
+              : "border-teal-600 bg-teal-50 text-teal-800"
+          }`}
+        >
+          <input
+            type="number"
+            min={1}
+            max={MAX_QUESTION_COUNT}
+            value={questionCount}
+            onChange={(e) => {
+              const n = Math.round(Number(e.target.value));
+              if (Number.isFinite(n)) setQuestionCount(Math.min(MAX_QUESTION_COUNT, Math.max(1, n)));
+            }}
+            aria-label="Enter a custom number of questions"
+            className="w-9 bg-transparent text-center text-sm font-medium text-inherit outline-none [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+        </div>
       </div>
+      <p className="mt-1.5 text-[11px] text-slate-400">
+        Up to {MAX_QUESTION_COUNT} questions, pulling from the built-in bank and any questions you&apos;ve added
+        yourself.
+      </p>
 
       <p className="mt-5 text-xs font-medium text-slate-600">Question category</p>
       <div className="mt-2 flex gap-2">
@@ -405,11 +431,11 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
             <label htmlFor="priority-select" className="text-xs font-medium text-slate-600">
               Focus scoring on
             </label>
-            <select
+            <Select
               id="priority-select"
               value={priority ?? ""}
               onChange={(e) => setPriority((e.target.value || null) as Metric["key"] | null)}
-              className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-teal-600"
+              className="mt-2 w-full"
             >
               <option value="">Balanced (default)</option>
               {PRIORITY_OPTIONS.filter((p): p is Metric["key"] => p !== null).map((p) => (
@@ -417,7 +443,7 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
                   {METRIC_LABELS[p]}
                 </option>
               ))}
-            </select>
+            </Select>
             <p className="mt-1 text-[11px] text-slate-400">Weights that metric more heavily in your overall score.</p>
           </div>
 
@@ -441,11 +467,11 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
                 <label htmlFor="voice-select" className="text-[11px] font-medium text-slate-500">
                   Voice
                 </label>
-                <select
+                <Select
                   id="voice-select"
                   value={voiceURI ?? ""}
                   onChange={(e) => setVoiceURI(e.target.value || null)}
-                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-teal-600"
+                  className="mt-1 w-full"
                 >
                   <option value="">Browser default</option>
                   {voices.map((v) => (
@@ -453,7 +479,7 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
                       {v.name} ({v.lang})
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div>
                 <label htmlFor="rate-slider" className="flex items-center justify-between text-[11px] font-medium text-slate-500">

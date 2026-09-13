@@ -148,7 +148,7 @@ export default function QuestionCard({
   }
 
   return (
-    <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-6">
+    <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-slate-400">
           Question {questionNumber} of {totalQuestions}

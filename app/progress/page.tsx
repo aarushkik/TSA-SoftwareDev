@@ -6,6 +6,7 @@ import CountUpNumber from "@/components/CountUpNumber";
 import { scoreColor } from "@/components/MetricBar";
 import PracticeHeatmap from "@/components/PracticeHeatmap";
 import ScoreTrendChart from "@/components/ScoreTrendChart";
+import Select from "@/components/Select";
 import { ACHIEVEMENTS, currentStreakDays, jobTypesCovered, unlockedAchievements } from "@/lib/achievements";
 import {
   clearSessions,
@@ -181,17 +182,13 @@ export default function ProgressPage() {
               <p className="text-xs font-medium text-slate-500">Weekly goal</p>
               <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
                 Goal
-                <select
-                  value={weeklyGoal}
-                  onChange={(e) => handleGoalChange(Number(e.target.value))}
-                  className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] text-slate-600 outline-none focus:border-teal-600"
-                >
+                <Select value={weeklyGoal} onChange={(e) => handleGoalChange(Number(e.target.value))} className="w-20">
                   {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                     <option key={n} value={n}>
                       {n}/week
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
             </div>
             <div className="mt-2 flex items-center gap-3">
