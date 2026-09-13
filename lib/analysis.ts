@@ -221,10 +221,10 @@ export function analyzeAnswer(
       label: "Response substance",
       detail:
         wordCount < LENGTH_IDEAL_MIN_WORDS
-          ? `${wordCount} words — a bit short; try developing your example further`
+          ? `${wordCount} words — a bit short of the ${LENGTH_IDEAL_MIN_WORDS}-${LENGTH_IDEAL_MAX_WORDS} word target range; try developing your example further`
           : wordCount > LENGTH_IDEAL_MAX_WORDS
-            ? `${wordCount} words — thorough, but could be more concise`
-            : `${wordCount} words — a well-developed length for this question`,
+            ? `${wordCount} words — past the ${LENGTH_IDEAL_MIN_WORDS}-${LENGTH_IDEAL_MAX_WORDS} word target range; thorough, but could be more concise`
+            : `${wordCount} words — within the ${LENGTH_IDEAL_MIN_WORDS}-${LENGTH_IDEAL_MAX_WORDS} word target range for a well-developed answer`,
       available: true,
     });
   }
