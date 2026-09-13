@@ -38,18 +38,22 @@ function selfAwarenessNote(selfRating: number, overallScore: number): string {
 export default function AnswerFeedback({
   answered,
   isLastQuestion,
+  previousAttemptScore,
   onNext,
   onRetry,
   onRateSelf,
 }: {
   answered: AnsweredQuestion;
   isLastQuestion: boolean;
+  /** The overall score from the attempt just discarded by "Try again", if this is a retry. */
+  previousAttemptScore: number | null;
   onNext: () => void;
   onRetry: () => void;
   onRateSelf: (rating: number) => void;
 }) {
   const { question, analysis } = answered;
   const breakdown = fillerBreakdown(analysis.fillerWords);
+  const scoreDelta = previousAttemptScore !== null ? analysis.overallScore - previousAttemptScore : null;
   const weakest = analysis.metrics
     .filter((m) => m.available)
     .sort((a, b) => a.score - b.score)[0];
@@ -77,6 +81,20 @@ export default function AnswerFeedback({
           </p>
         </div>
         <p className="mt-2 text-xs text-slate-500">&ldquo;{question.text}&rdquo;</p>
+
+        {scoreDelta !== null && (
+          <p
+            className={`mt-2 text-xs font-medium ${
+              scoreDelta > 0 ? "text-teal-700" : scoreDelta < 0 ? "text-rose-600" : "text-slate-500"
+            }`}
+          >
+            {scoreDelta > 0
+              ? `+${scoreDelta} points vs. your last attempt (${previousAttemptScore}/100)`
+              : scoreDelta < 0
+                ? `${scoreDelta} points vs. your last attempt (${previousAttemptScore}/100)`
+                : `Same score as your last attempt (${previousAttemptScore}/100)`}
+          </p>
+        )}
 
         <div className="mt-3 rounded-lg bg-slate-50 p-3">
           {analysis.selfRating === undefined ? (

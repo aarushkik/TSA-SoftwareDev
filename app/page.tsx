@@ -55,6 +55,9 @@ export default function Home() {
   // Captured right before each answer's difficulty adjustment, so a retry
   // can undo that shift instead of compounding two adjustments for one question.
   const [difficultyBeforeAnswer, setDifficultyBeforeAnswer] = useState<Difficulty>("beginner");
+  // The score from the attempt just discarded by a retry, shown once on the
+  // next feedback screen as a comparison, then cleared on the next question.
+  const [previousAttemptScore, setPreviousAttemptScore] = useState<number | null>(null);
 
   // A "Practice this" link from the question browser (?practice=<id>) drops
   // straight into a single-question session for that exact question.
@@ -104,6 +107,7 @@ export default function Home() {
     setDifficulty(startDifficulty);
     setAskedIds(new Set([first.id]));
     setAnswers([]);
+    setPreviousAttemptScore(null);
     setCurrentQuestion(first);
     setPhase("asking");
   }
@@ -128,6 +132,7 @@ export default function Home() {
 
   /** Shared by the "Next" button (normal mode) and exam mode's auto-advance. */
   function advance(updatedAnswers: AnsweredQuestion[], currentDifficulty: Difficulty) {
+    setPreviousAttemptScore(null);
     if (updatedAnswers.length >= questionCount) {
       finishSession(updatedAnswers);
       return;
@@ -189,6 +194,7 @@ export default function Home() {
   /** Discards the last answer and re-asks the same question, undoing the difficulty shift it caused. */
   function handleRetry() {
     if (!currentQuestion) return;
+    setPreviousAttemptScore(lastAnswered?.analysis.overallScore ?? null);
     setAnswers((prev) => prev.slice(0, -1));
     setDifficulty(difficultyBeforeAnswer);
     setLastAnswered(null);
@@ -233,6 +239,7 @@ export default function Home() {
           <AnswerFeedback
             answered={lastAnswered}
             isLastQuestion={answers.length >= questionCount}
+            previousAttemptScore={previousAttemptScore}
             onNext={handleNext}
             onRetry={handleRetry}
             onRateSelf={handleRateSelf}
