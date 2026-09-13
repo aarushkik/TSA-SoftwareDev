@@ -140,6 +140,18 @@ export default function AnswerFeedback({
                 );
               })}
             </div>
+            {analysis.starMatches && Object.keys(analysis.starMatches).length > 0 && (
+              <ul className="mt-2 space-y-0.5">
+                {(Object.keys(STAR_LABELS) as (keyof StarParts)[])
+                  .filter((part) => analysis.starMatches?.[part])
+                  .map((part) => (
+                    <li key={part} className="text-[11px] text-slate-400">
+                      <span className="font-medium text-slate-500">{STAR_LABELS[part]}:</span> &ldquo;
+                      {analysis.starMatches![part]}&rdquo;
+                    </li>
+                  ))}
+              </ul>
+            )}
           </div>
         )}
 

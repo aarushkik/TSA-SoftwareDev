@@ -78,6 +78,28 @@ test("a STAR-complete answer scores higher structure than one missing parts", ()
   assert.ok(metric(complete, "structure").score > metric(incomplete, "structure").score);
 });
 
+test("starMatches captures the exact phrase behind each detected STAR part", () => {
+  const complete = analyzeAnswer(
+    "There was a time when our team's project was behind schedule. I was responsible for the backend, so I decided to " +
+      "reorganize the task list and reached out to a teammate for help. As a result, we shipped on time and I learned " +
+      "to communicate blockers earlier.",
+    45,
+    true,
+  );
+  assert.ok(complete.starMatches);
+  assert.equal(complete.starParts?.situation, true);
+  assert.match(complete.starMatches!.situation ?? "", /there was a time/i);
+  assert.equal(complete.starParts?.result, true);
+  assert.match(complete.starMatches!.result ?? "", /as a result/i);
+
+  const incomplete = analyzeAnswer("I worked on a project once. It was fine.", 8, true);
+  assert.equal(incomplete.starParts?.situation, false);
+  assert.equal(incomplete.starMatches!.situation, undefined);
+
+  const notBehavioral = analyzeAnswer("There was a time I did something.", 8, false);
+  assert.equal(notBehavioral.starMatches, null);
+});
+
 test("structure is not applicable, and its weight is redistributed, for a non-behavioral question", () => {
   const a = analyzeAnswer("I am a hard worker who communicates well and enjoys learning new things every day.", 20, false);
   const structure = metric(a, "structure");

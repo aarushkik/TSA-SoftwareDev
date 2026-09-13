@@ -38,6 +38,7 @@ function makeAnswer(overrides: Partial<AnsweredQuestion["analysis"]> & { questio
       fillerWords: [],
       longestPauseSeconds: 0,
       starParts: null,
+      starMatches: null,
       metrics: [],
       overallScore: 60,
       ...analysisOverrides,

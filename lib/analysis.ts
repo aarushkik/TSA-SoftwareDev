@@ -165,12 +165,22 @@ const STAR_CUES: Record<keyof StarParts, RegExp> = {
   result: /\b(as a result|in the end|ultimately|this led to|which resulted in|because of this|the outcome was|i learned|we were able to|successfully|ended up)\b/i,
 };
 
-function detectStarParts(transcript: string): StarParts {
+/** The exact phrase (if any) that matched each STAR cue — evidence for the checkmark, not just a boolean. */
+function detectStarMatches(transcript: string): Partial<Record<keyof StarParts, string>> {
+  const matches: Partial<Record<keyof StarParts, string>> = {};
+  for (const key of Object.keys(STAR_CUES) as (keyof StarParts)[]) {
+    const match = STAR_CUES[key].exec(transcript);
+    if (match) matches[key] = match[0];
+  }
+  return matches;
+}
+
+function detectStarParts(matches: Partial<Record<keyof StarParts, string>>): StarParts {
   return {
-    situation: STAR_CUES.situation.test(transcript),
-    task: STAR_CUES.task.test(transcript),
-    action: STAR_CUES.action.test(transcript),
-    result: STAR_CUES.result.test(transcript),
+    situation: matches.situation !== undefined,
+    task: matches.task !== undefined,
+    action: matches.action !== undefined,
+    result: matches.result !== undefined,
   };
 }
 
@@ -186,7 +196,8 @@ export function analyzeAnswer(
   const wordCount = countWords(transcript);
   const fillerWords = findFillerWords(transcript);
   const wordsPerMinute = durationSeconds > 0 ? (wordCount / durationSeconds) * 60 : 0;
-  const starParts = starRelevant ? detectStarParts(transcript) : null;
+  const starMatches = starRelevant ? detectStarMatches(transcript) : null;
+  const starParts = starMatches ? detectStarParts(starMatches) : null;
 
   const metrics: Omit<Metric, "score" | "weight">[] = [];
   const rawScores: Record<Metric["key"], number> = {
@@ -357,6 +368,7 @@ export function analyzeAnswer(
     fillerWords,
     longestPauseSeconds,
     starParts,
+    starMatches,
     metrics: finalMetrics,
     overallScore,
   };

@@ -96,6 +96,8 @@ export type AnswerAnalysis = {
   fillerWords: string[];
   longestPauseSeconds: number;
   starParts: StarParts | null;
+  /** The exact phrase that triggered each detected STAR part, for parts where one was found. */
+  starMatches: Partial<Record<keyof StarParts, string>> | null;
   metrics: Metric[];
   overallScore: number;
   /** A subjective 1-5 self-rating captured right after answering, before the measured score is compared to it. */
