@@ -112,6 +112,7 @@ export default function Home() {
       jobType,
       answers: finalAnswers,
       overallScore,
+      examMode,
     };
     saveSession(session);
     setAnswers(finalAnswers);

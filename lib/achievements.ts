@@ -67,6 +67,34 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: "Answer an advanced-difficulty question",
     check: (sessions) => sessions.some((s) => s.answers.some((a) => a.question.difficulty === "advanced")),
   },
+  {
+    id: "exam-mode",
+    label: "Under Pressure",
+    description: "Complete a session in exam mode",
+    check: (sessions) => sessions.some((s) => s.examMode === true),
+  },
+  {
+    id: "own-question",
+    label: "Question Creator",
+    description: "Practice with a question you wrote yourself",
+    check: (sessions) => sessions.some((s) => s.answers.some((a) => a.question.id.startsWith("custom-"))),
+  },
+  {
+    id: "well-calibrated",
+    label: "Well-Calibrated",
+    description: "Rate yourself within 10 points of your actual score three times",
+    check: (sessions) => {
+      let count = 0;
+      for (const s of sessions) {
+        for (const a of s.answers) {
+          if (a.analysis.selfRating !== undefined && Math.abs(a.analysis.overallScore - a.analysis.selfRating * 20) <= 10) {
+            count += 1;
+          }
+        }
+      }
+      return count >= 3;
+    },
+  },
 ];
 
 export function unlockedAchievements(sessions: SessionRecord[]): Achievement[] {
