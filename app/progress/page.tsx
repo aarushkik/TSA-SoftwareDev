@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState, useSyncExternalStore, type ChangeEvent } from "react";
 import CountUpNumber from "@/components/CountUpNumber";
 import { scoreColor } from "@/components/MetricBar";
@@ -207,7 +208,7 @@ export default function ProgressPage() {
                 key={s.id}
                 className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:border-slate-300"
               >
-                <div className="min-w-0">
+                <Link href={`/progress/${s.id}`} className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-slate-800">{JOB_TYPE_LABELS[s.jobType]}</p>
                   <p className="text-xs text-slate-400">
                     {new Date(s.completedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
@@ -215,7 +216,7 @@ export default function ProgressPage() {
                     {s.answers.length} question{s.answers.length === 1 ? "" : "s"}
                   </p>
                   {s.notes && <p className="mt-0.5 truncate text-xs italic text-slate-400">&ldquo;{s.notes}&rdquo;</p>}
-                </div>
+                </Link>
                 <div className="flex shrink-0 items-center gap-3">
                   <span className={`text-lg font-semibold tabular-nums ${scoreColor(s.overallScore)}`}>{s.overallScore}</span>
                   <button

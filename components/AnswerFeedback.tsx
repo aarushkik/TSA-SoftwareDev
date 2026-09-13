@@ -1,6 +1,17 @@
+"use client";
+
+import { useEffect } from "react";
 import CountUpNumber from "./CountUpNumber";
 import MetricBar, { scoreColor } from "./MetricBar";
-import type { AnsweredQuestion } from "@/lib/types";
+import { METRIC_TIPS } from "@/lib/analysis";
+import type { AnsweredQuestion, StarParts } from "@/lib/types";
+
+const STAR_LABELS: Record<keyof StarParts, string> = {
+  situation: "Situation",
+  task: "Task",
+  action: "Action",
+  result: "Result",
+};
 
 function fillerBreakdown(fillerWords: string[]): { word: string; count: number }[] {
   const counts = new Map<string, number>();
@@ -29,6 +40,18 @@ export default function AnswerFeedback({
 }) {
   const { question, analysis } = answered;
   const breakdown = fillerBreakdown(analysis.fillerWords);
+  const weakest = analysis.metrics
+    .filter((m) => m.available)
+    .sort((a, b) => a.score - b.score)[0];
+
+  // A quick Enter-to-continue shortcut, since there's no text field on this screen to conflict with.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Enter") onNext();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onNext]);
 
   return (
     <div className="mx-auto max-w-lg space-y-3">
@@ -64,6 +87,27 @@ export default function AnswerFeedback({
           </div>
         )}
 
+        {analysis.starParts && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <p className="text-xs font-medium text-slate-600">STAR structure detected</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {(Object.keys(STAR_LABELS) as (keyof StarParts)[]).map((part) => {
+                const present = analysis.starParts![part];
+                return (
+                  <span
+                    key={part}
+                    className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      present ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-400"
+                    }`}
+                  >
+                    {present ? "✓" : "○"} {STAR_LABELS[part]}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {analysis.transcript && (
           <div className="mt-3 border-t border-slate-100 pt-3">
             <p className="text-xs font-medium text-slate-600">What you said</p>
@@ -71,6 +115,13 @@ export default function AnswerFeedback({
           </div>
         )}
       </section>
+
+      {weakest && weakest.score < 65 && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-xs font-medium text-amber-900">Try this next time</p>
+          <p className="mt-1 text-sm text-amber-800">{METRIC_TIPS[weakest.key]}</p>
+        </section>
+      )}
 
       {question.followUp && analysis.overallScore >= 70 && (
         <section className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">

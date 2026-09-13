@@ -53,6 +53,16 @@ export const WEIGHTS: Record<Metric["key"], number> = {
   vocalEnergy: 0.15,
 };
 
+/** A concrete next step for the lowest-scoring metric — shown both per-answer and as a session-level recommendation. */
+export const METRIC_TIPS: Record<Metric["key"], string> = {
+  communication: "Work on developing fuller, more detailed answers with concrete specifics, not just general statements.",
+  pace: "Practice pacing your speech more evenly and cutting down on long pauses.",
+  fillerControl: "Focus on trimming filler words like \"um\" and \"like\" — pausing silently instead feels more confident.",
+  structure: "Practice structuring answers with the STAR method: Situation, Task, Action, Result.",
+  engagement: "Enable camera analysis and practice facing the camera consistently while you answer.",
+  vocalEnergy: "Practice varying your tone instead of speaking in a flat monotone.",
+};
+
 /** How much weight a stated priority adds to its metric; the rest of the table scales down proportionally so it still sums to 1. */
 const PRIORITY_BOOST = 0.12;
 

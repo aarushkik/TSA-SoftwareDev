@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import CountUpNumber from "./CountUpNumber";
 import { scoreColor } from "./MetricBar";
+import { METRIC_TIPS } from "@/lib/analysis";
 import { updateSessionNotes } from "@/lib/sessions";
 import { DIFFICULTY_LABELS, JOB_TYPE_LABELS, type AnsweredQuestion, type Difficulty, type JobType, type Metric } from "@/lib/types";
 
@@ -14,15 +15,6 @@ const METRIC_LABELS: Record<Metric["key"], string> = {
   structure: "Answer structure",
   engagement: "Eye contact & engagement",
   vocalEnergy: "Vocal energy",
-};
-
-const CATEGORY_SUGGESTIONS: Record<Metric["key"], string> = {
-  communication: "General questions — work on developing fuller, more detailed answers",
-  pace: "Any category — practice pacing your speech and cutting down on long pauses",
-  fillerControl: "Any category — focus on trimming filler words like \"um\" and \"like\"",
-  structure: "Behavioral questions — practice structuring answers with the STAR method (Situation, Task, Action, Result)",
-  engagement: "Enable camera analysis and practice facing the camera consistently while you answer",
-  vocalEnergy: "Any category — practice varying your tone instead of speaking in a flat monotone",
 };
 
 function recommendedDifficulty(score: number): Difficulty {
@@ -162,7 +154,7 @@ export default function SessionSummary({
       {weakest && (
         <section className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-medium text-slate-600">Recommended practice</p>
-          <p className="mt-1 text-sm text-slate-800">{CATEGORY_SUGGESTIONS[weakest.key]}</p>
+          <p className="mt-1 text-sm text-slate-800">{METRIC_TIPS[weakest.key]}</p>
           <p className="mt-1 text-xs text-slate-400">
             Suggested next difficulty: {DIFFICULTY_LABELS[recommendedDifficulty(overallScore)]}
           </p>
