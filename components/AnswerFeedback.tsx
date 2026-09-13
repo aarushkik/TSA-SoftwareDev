@@ -27,16 +27,26 @@ function encouragement(score: number): string {
   return "Here's what to work on for next time.";
 }
 
+/** How a 1-5 self-rating compares to the measured score, in the same terms self-awareness research uses. */
+function selfAwarenessNote(selfRating: number, overallScore: number): string {
+  const gap = overallScore - selfRating * 20;
+  if (gap > 15) return "You scored higher than you expected — you may be more prepared than you think.";
+  if (gap < -15) return "You rated yourself higher than you scored — worth a closer look at the breakdown below.";
+  return "Your self-rating was close to your actual score — good self-awareness.";
+}
+
 export default function AnswerFeedback({
   answered,
   isLastQuestion,
   onNext,
   onRetry,
+  onRateSelf,
 }: {
   answered: AnsweredQuestion;
   isLastQuestion: boolean;
   onNext: () => void;
   onRetry: () => void;
+  onRateSelf: (rating: number) => void;
 }) {
   const { question, analysis } = answered;
   const breakdown = fillerBreakdown(analysis.fillerWords);
@@ -67,6 +77,31 @@ export default function AnswerFeedback({
           </p>
         </div>
         <p className="mt-2 text-xs text-slate-500">&ldquo;{question.text}&rdquo;</p>
+
+        <div className="mt-3 rounded-lg bg-slate-50 p-3">
+          {analysis.selfRating === undefined ? (
+            <>
+              <p className="text-xs font-medium text-slate-600">How do you think you did?</p>
+              <div className="mt-1.5 flex gap-1.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => onRateSelf(n)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-medium text-slate-600 transition hover:border-teal-400 hover:text-teal-700 active:scale-[0.95]"
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-slate-600">
+              You rated yourself <span className="font-medium text-slate-800">{analysis.selfRating}/5</span> —{" "}
+              {selfAwarenessNote(analysis.selfRating, analysis.overallScore)}
+            </p>
+          )}
+        </div>
 
         <ul className="mt-1 divide-y divide-slate-100">
           {analysis.metrics.map((m) => (

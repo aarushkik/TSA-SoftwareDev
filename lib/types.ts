@@ -83,6 +83,8 @@ export type AnswerAnalysis = {
   starParts: StarParts | null;
   metrics: Metric[];
   overallScore: number;
+  /** A subjective 1-5 self-rating captured right after answering, before the measured score is compared to it. */
+  selfRating?: number;
 };
 
 export type AnsweredQuestion = {
@@ -113,4 +115,6 @@ export type StartOptions = {
   readAloud: boolean;
   /** Exam mode holds every answer's feedback until the session ends, for a more realistic simulation. */
   examMode: boolean;
+  /** null = no limit; otherwise the answer auto-submits when this many seconds elapse. */
+  timeLimitSeconds: number | null;
 };

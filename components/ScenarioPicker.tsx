@@ -24,6 +24,14 @@ const CATEGORIES = Object.keys(CATEGORY_LABELS) as CategoryFilter[];
 
 const DIFFICULTY_OPTIONS: (Difficulty | null)[] = [null, "beginner", "intermediate", "advanced"];
 
+const TIME_LIMIT_OPTIONS: (number | null)[] = [null, 60, 90, 120];
+const TIME_LIMIT_LABELS: Record<string, string> = {
+  none: "No limit",
+  "60": "60s",
+  "90": "90s",
+  "120": "120s",
+};
+
 const PRIORITY_LABELS: Record<Metric["key"], string> = {
   communication: "Response substance",
   pace: "Speaking pace",
@@ -79,6 +87,7 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
   const [fixedDifficulty, setFixedDifficulty] = useState<Difficulty | null>(null);
   const [readAloud, setReadAloud] = useState(false);
   const [examMode, setExamMode] = useState(false);
+  const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | null>(null);
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-6">
@@ -224,6 +233,32 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
             </span>
           </label>
 
+          <div>
+            <p className="text-xs font-medium text-slate-600">Time limit per answer</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {TIME_LIMIT_OPTIONS.map((t) => (
+                <button
+                  key={t ?? "none"}
+                  type="button"
+                  onClick={() => setTimeLimitSeconds(t)}
+                  aria-pressed={timeLimitSeconds === t}
+                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition active:scale-[0.98] ${
+                    timeLimitSeconds === t
+                      ? "border-teal-600 bg-teal-50 text-teal-800"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  {TIME_LIMIT_LABELS[t === null ? "none" : String(t)]}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">
+              {timeLimitSeconds === null
+                ? "Take as long as you need to answer."
+                : `Recording submits automatically at ${timeLimitSeconds}s.`}
+            </p>
+          </div>
+
           <label className="flex cursor-pointer items-start justify-between gap-3">
             <span className="min-w-0">
               <span className="block text-xs font-medium text-slate-700">Exam mode</span>
@@ -270,7 +305,17 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
       <button
         type="button"
         onClick={() =>
-          onStart({ jobType, questionCount, cameraEnabled, category, priority, fixedDifficulty, readAloud, examMode })
+          onStart({
+            jobType,
+            questionCount,
+            cameraEnabled,
+            category,
+            priority,
+            fixedDifficulty,
+            readAloud,
+            examMode,
+            timeLimitSeconds,
+          })
         }
         className="mt-4 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 active:scale-[0.98]"
       >

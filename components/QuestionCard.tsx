@@ -16,6 +16,7 @@ export default function QuestionCard({
   totalQuestions,
   cameraEnabled,
   readAloud,
+  timeLimitSeconds,
   onSubmit,
 }: {
   question: Question;
@@ -23,6 +24,8 @@ export default function QuestionCard({
   totalQuestions: number;
   cameraEnabled: boolean;
   readAloud: boolean;
+  /** null = no limit; otherwise the recording auto-submits once this many seconds elapse. */
+  timeLimitSeconds: number | null;
   onSubmit: (
     transcript: string,
     durationSeconds: number,
@@ -91,7 +94,10 @@ export default function QuestionCard({
     startedAtRef.current = Date.now();
     setElapsed(0);
     timerRef.current = setInterval(() => {
-      if (startedAtRef.current) setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+      if (!startedAtRef.current) return;
+      const secs = Math.floor((Date.now() - startedAtRef.current) / 1000);
+      setElapsed(secs);
+      if (timeLimitSeconds !== null && secs >= timeLimitSeconds) handleStopAndSubmit();
     }, 250);
     start();
     if (cameraEnabled && videoRef.current) void face.start(videoRef.current);
@@ -210,7 +216,9 @@ export default function QuestionCard({
                     <span className="absolute inset-0 animate-ping rounded-full bg-rose-500 opacity-60" />
                     <span className="absolute inset-0 rounded-full bg-rose-600" />
                   </span>
-                  Listening… {elapsed}s
+                  {timeLimitSeconds !== null
+                    ? `Listening… ${Math.max(0, timeLimitSeconds - elapsed)}s left`
+                    : `Listening… ${elapsed}s`}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -231,25 +239,45 @@ export default function QuestionCard({
                 </div>
               </div>
 
-              <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                <div
-                  className={`h-full rounded-full transition-[width] duration-300 ease-out ${
-                    elapsed < IDEAL_MIN_SECONDS
-                      ? "bg-amber-400"
+              {timeLimitSeconds !== null ? (
+                <>
+                  <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className={`h-full rounded-full transition-[width] duration-300 ease-out ${
+                        timeLimitSeconds - elapsed <= 10 ? "bg-rose-500" : "bg-teal-500"
+                      }`}
+                      style={{ width: `${Math.min(100, (elapsed / timeLimitSeconds) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    {timeLimitSeconds - elapsed <= 10
+                      ? "Wrapping up automatically soon…"
+                      : "Recording will submit automatically when time runs out."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className={`h-full rounded-full transition-[width] duration-300 ease-out ${
+                        elapsed < IDEAL_MIN_SECONDS
+                          ? "bg-amber-400"
+                          : elapsed <= IDEAL_MAX_SECONDS
+                            ? "bg-teal-500"
+                            : "bg-rose-500"
+                      }`}
+                      style={{ width: `${Math.min(100, (elapsed / IDEAL_MAX_SECONDS) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    {elapsed < IDEAL_MIN_SECONDS
+                      ? `Aim for at least ${IDEAL_MIN_SECONDS}s — keep going.`
                       : elapsed <= IDEAL_MAX_SECONDS
-                        ? "bg-teal-500"
-                        : "bg-rose-500"
-                  }`}
-                  style={{ width: `${Math.min(100, (elapsed / IDEAL_MAX_SECONDS) * 100)}%` }}
-                />
-              </div>
-              <p className="mt-1 text-[11px] text-slate-400">
-                {elapsed < IDEAL_MIN_SECONDS
-                  ? `Aim for at least ${IDEAL_MIN_SECONDS}s — keep going.`
-                  : elapsed <= IDEAL_MAX_SECONDS
-                    ? "Good length — wrap up whenever you're ready."
-                    : "Getting long — consider wrapping up soon."}
-              </p>
+                        ? "Good length — wrap up whenever you're ready."
+                        : "Getting long — consider wrapping up soon."}
+                  </p>
+                </>
+              )}
 
               <div className="mt-3 min-h-16 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
                 {transcript || interim ? (

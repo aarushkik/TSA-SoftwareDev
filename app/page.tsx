@@ -43,6 +43,7 @@ export default function Home() {
   const [fixedDifficulty, setFixedDifficulty] = useState<Difficulty | null>(null);
   const [readAloud, setReadAloud] = useState(false);
   const [examMode, setExamMode] = useState(false);
+  const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>("beginner");
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [askedIds, setAskedIds] = useState<Set<string>>(new Set());
@@ -71,6 +72,7 @@ export default function Home() {
       setFixedDifficulty(question.difficulty);
       setReadAloud(false);
       setExamMode(false);
+      setTimeLimitSeconds(null);
       setDifficulty(question.difficulty);
       setAskedIds(new Set([question.id]));
       setAnswers([]);
@@ -92,6 +94,7 @@ export default function Home() {
     setFixedDifficulty(options.fixedDifficulty);
     setReadAloud(options.readAloud);
     setExamMode(options.examMode);
+    setTimeLimitSeconds(options.timeLimitSeconds);
     setDifficulty(startDifficulty);
     setAskedIds(new Set([first.id]));
     setAnswers([]);
@@ -169,6 +172,13 @@ export default function Home() {
     setPhase("feedback");
   }
 
+  function handleRateSelf(rating: number) {
+    if (!lastAnswered) return;
+    const updated: AnsweredQuestion = { ...lastAnswered, analysis: { ...lastAnswered.analysis, selfRating: rating } };
+    setLastAnswered(updated);
+    setAnswers((prev) => prev.map((a, i) => (i === prev.length - 1 ? updated : a)));
+  }
+
   /** Discards the last answer and re-asks the same question, undoing the difficulty shift it caused. */
   function handleRetry() {
     if (!currentQuestion) return;
@@ -205,6 +215,7 @@ export default function Home() {
             totalQuestions={questionCount}
             cameraEnabled={cameraEnabled}
             readAloud={readAloud}
+            timeLimitSeconds={timeLimitSeconds}
             onSubmit={handleSubmitAnswer}
           />
         )}
@@ -215,6 +226,7 @@ export default function Home() {
             isLastQuestion={answers.length >= questionCount}
             onNext={handleNext}
             onRetry={handleRetry}
+            onRateSelf={handleRateSelf}
           />
         )}
 

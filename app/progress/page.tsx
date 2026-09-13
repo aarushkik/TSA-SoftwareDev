@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useSyncExternalStore, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ChangeEvent } from "react";
 import CountUpNumber from "@/components/CountUpNumber";
 import { scoreColor } from "@/components/MetricBar";
 import PracticeHeatmap from "@/components/PracticeHeatmap";
@@ -23,10 +23,44 @@ function average(values: number[]): number {
   return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
 }
 
+const WEEKLY_GOAL_KEY = "interview-coach.weekly-goal.v1";
+const DEFAULT_WEEKLY_GOAL = 3;
+
+function startOfWeek(d: Date): Date {
+  const s = new Date(d);
+  s.setHours(0, 0, 0, 0);
+  s.setDate(s.getDate() - s.getDay());
+  return s;
+}
+
 export default function ProgressPage() {
   const sessions = useSyncExternalStore(subscribeSessions, getSessions, getSessionsServerSnapshot);
   const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [weeklyGoal, setWeeklyGoal] = useState(DEFAULT_WEEKLY_GOAL);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(WEEKLY_GOAL_KEY);
+      if (stored) {
+        const parsed = Number(stored);
+        if (Number.isFinite(parsed) && parsed > 0) queueMicrotask(() => setWeeklyGoal(parsed));
+      }
+    } catch {
+      // Private browsing or a full quota: the default goal stays in effect.
+    }
+  }, []);
+
+  function handleGoalChange(value: number) {
+    setWeeklyGoal(value);
+    try {
+      window.localStorage.setItem(WEEKLY_GOAL_KEY, String(value));
+    } catch {
+      // Ignore — same as above.
+    }
+  }
+
+  const sessionsThisWeek = sessions.filter((s) => new Date(s.completedAt) >= startOfWeek(new Date())).length;
 
   function handleExport() {
     const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: "application/json" });
@@ -117,6 +151,40 @@ export default function ProgressPage() {
               </p>
               <p className="mt-0.5 text-[11px] text-slate-500">Avg. fillers/session</p>
             </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-medium text-slate-500">Weekly goal</p>
+              <label className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                Goal
+                <select
+                  value={weeklyGoal}
+                  onChange={(e) => handleGoalChange(Number(e.target.value))}
+                  className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] text-slate-600 outline-none focus:border-teal-600"
+                >
+                  {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                    <option key={n} value={n}>
+                      {n}/week
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="mt-2 flex items-center gap-3">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-teal-500 transition-[width] duration-500 ease-out"
+                  style={{ width: `${Math.min(100, (sessionsThisWeek / weeklyGoal) * 100)}%` }}
+                />
+              </div>
+              <p className="shrink-0 text-xs font-medium text-slate-600">
+                {sessionsThisWeek}/{weeklyGoal} this week
+              </p>
+            </div>
+            {sessionsThisWeek >= weeklyGoal && (
+              <p className="mt-1.5 text-[11px] font-medium text-teal-700">Goal reached — nice work this week!</p>
+            )}
           </div>
 
           <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
