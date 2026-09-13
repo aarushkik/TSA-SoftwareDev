@@ -54,9 +54,10 @@ export default function AnswerFeedback({
   const { question, analysis } = answered;
   const breakdown = fillerBreakdown(analysis.fillerWords);
   const scoreDelta = previousAttemptScore !== null ? analysis.overallScore - previousAttemptScore : null;
-  const weakest = analysis.metrics
-    .filter((m) => m.available)
-    .sort((a, b) => a.score - b.score)[0];
+  const improvementAreas = analysis.metrics
+    .filter((m) => m.available && m.score < 70)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 2);
 
   // A quick Enter-to-continue shortcut, since there's no text field on this screen to conflict with.
   useEffect(() => {
@@ -181,10 +182,16 @@ export default function AnswerFeedback({
         )}
       </section>
 
-      {weakest && weakest.score < 65 && (
+      {improvementAreas.length > 0 && (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-xs font-medium text-amber-900">Try this next time</p>
-          <p className="mt-1 text-sm text-amber-800">{METRIC_TIPS[weakest.key]}</p>
+          <p className="text-xs font-medium text-amber-900">How to improve</p>
+          <ul className="mt-1.5 space-y-2">
+            {improvementAreas.map((m) => (
+              <li key={m.key} className="text-sm text-amber-800">
+                <span className="font-medium">{m.label} ({Math.round(m.score)}/100):</span> {METRIC_TIPS[m.key]}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

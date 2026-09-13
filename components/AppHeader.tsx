@@ -23,7 +23,7 @@ export default function AppHeader() {
             <span className="text-sm font-semibold text-slate-900">Interview Coach</span>
           </Link>
 
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-0.5 overflow-x-auto sm:gap-1">
             <Link
               href="/"
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
@@ -47,6 +47,14 @@ export default function AppHeader() {
               }`}
             >
               Progress
+            </Link>
+            <Link
+              href="/profile"
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                pathname === "/profile" ? "bg-teal-50 text-teal-700" : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Info
             </Link>
             <button
               type="button"

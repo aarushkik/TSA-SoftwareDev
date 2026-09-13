@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { hintFor } from "@/lib/hints";
+import { getProfile } from "@/lib/profile";
 import { useFaceEngagement } from "@/lib/useFaceEngagement";
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
 import { useVocalEnergy } from "@/lib/useVocalEnergy";
@@ -45,6 +47,7 @@ export default function QuestionCard({
   const [typedAnswer, setTypedAnswer] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [reading, setReading] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
   const startedAtRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -75,11 +78,20 @@ export default function QuestionCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-speak when the question itself changes
   }, [question.id, readAloud]);
 
+  // Clear any revealed hint when a new question comes up.
+  useEffect(() => {
+    queueMicrotask(() => setHint(null));
+  }, [question.id]);
+
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  function handleShowHint() {
+    setHint(hintFor(question, getProfile()));
+  }
 
   const handleCancelRecording = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -178,6 +190,24 @@ export default function QuestionCard({
                 : "Camera will start when you begin answering."}
           </p>
         </div>
+      )}
+
+      {hint ? (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">
+          <span className="font-medium">Hint — </span>
+          {hint}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={handleShowHint}
+          className="mt-4 flex items-center gap-1.5 text-xs font-medium text-amber-700 hover:text-amber-800"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+            <path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.4 1 1.1 1 1.9v.2h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0012 3z" strokeLinejoin="round" />
+          </svg>
+          Get a hint
+        </button>
       )}
 
       {state === "unsupported" ? (
