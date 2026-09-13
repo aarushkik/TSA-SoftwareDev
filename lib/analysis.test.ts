@@ -77,3 +77,13 @@ test("a mostly-centred face scores higher engagement than a mostly-absent one", 
   assert.ok(metric(centered, "engagement").score > metric(absent, "engagement").score);
   assert.equal(metric(centered, "engagement").available, true);
 });
+
+test("a long pause lowers the pace score, and a short one doesn't", () => {
+  const text = Array(80).fill("word").join(" ");
+  const noPause = analyzeAnswer(text, 40, false, null, 0);
+  const shortPause = analyzeAnswer(text, 40, false, null, 1.5);
+  const longPause = analyzeAnswer(text, 40, false, null, 8);
+  assert.equal(metric(noPause, "pace").score, metric(shortPause, "pace").score);
+  assert.ok(metric(longPause, "pace").score < metric(noPause, "pace").score);
+  assert.match(metric(longPause, "pace").detail, /longest pause/i);
+});

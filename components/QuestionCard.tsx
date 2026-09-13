@@ -16,7 +16,7 @@ export default function QuestionCard({
   questionNumber: number;
   totalQuestions: number;
   cameraEnabled: boolean;
-  onSubmit: (transcript: string, durationSeconds: number, engagement: EngagementSummary | null) => void;
+  onSubmit: (transcript: string, durationSeconds: number, engagement: EngagementSummary | null, longestPauseSeconds: number) => void;
 }) {
   const { transcript, interim, state, error, start, stop } = useSpeechRecognition();
   const face = useFaceEngagement();
@@ -46,14 +46,15 @@ export default function QuestionCard({
     if (timerRef.current) clearInterval(timerRef.current);
     const result = stop();
     const engagementSummary = cameraEnabled ? face.stop() : null;
-    onSubmit(result.transcript, result.durationSeconds, engagementSummary);
+    onSubmit(result.transcript, result.durationSeconds, engagementSummary, result.longestPauseSeconds);
   }
 
   function handleTypedSubmit() {
     // A rough words-per-minute baseline for typed answers: 40 wpm reading/composing pace.
+    // No speech recognition ran, so there's no pause signal to measure — 0 is honest, not guessed.
     const wordCount = typedAnswer.trim().split(/\s+/).filter(Boolean).length;
     const estimatedSeconds = Math.max(10, (wordCount / 40) * 60);
-    onSubmit(typedAnswer.trim(), estimatedSeconds, null);
+    onSubmit(typedAnswer.trim(), estimatedSeconds, null, 0);
   }
 
   return (

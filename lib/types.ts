@@ -65,6 +65,7 @@ export type AnswerAnalysis = {
   wordsPerMinute: number;
   fillerWordCount: number;
   fillerWords: string[];
+  longestPauseSeconds: number;
   starParts: StarParts | null;
   metrics: Metric[];
   overallScore: number;

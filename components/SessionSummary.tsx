@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { scoreColor } from "./MetricBar";
-import type { AnsweredQuestion, Metric } from "@/lib/types";
+import { DIFFICULTY_LABELS, type AnsweredQuestion, type Difficulty, type Metric } from "@/lib/types";
 
 const METRIC_LABELS: Record<Metric["key"], string> = {
   communication: "Response substance",
@@ -9,6 +9,20 @@ const METRIC_LABELS: Record<Metric["key"], string> = {
   structure: "Answer structure",
   engagement: "Eye contact & engagement",
 };
+
+const CATEGORY_SUGGESTIONS: Record<Metric["key"], string> = {
+  communication: "General questions — work on developing fuller, more detailed answers",
+  pace: "Any category — practice pacing your speech and cutting down on long pauses",
+  fillerControl: "Any category — focus on trimming filler words like \"um\" and \"like\"",
+  structure: "Behavioral questions — practice structuring answers with the STAR method (Situation, Task, Action, Result)",
+  engagement: "Enable camera analysis and practice facing the camera consistently while you answer",
+};
+
+function recommendedDifficulty(score: number): Difficulty {
+  if (score >= 80) return "advanced";
+  if (score < 50) return "beginner";
+  return "intermediate";
+}
 
 function averageByMetric(answers: AnsweredQuestion[]): { key: Metric["key"]; label: string; average: number }[] {
   const totals = new Map<Metric["key"], { sum: number; count: number }>();
@@ -40,6 +54,7 @@ export default function SessionSummary({
   const averages = averageByMetric(answers).sort((a, b) => b.average - a.average);
   const strengths = averages.filter((m) => m.average >= 78);
   const focusAreas = averages.filter((m) => m.average < 65);
+  const weakest = averages[averages.length - 1];
   const totalFillers = answers.reduce((sum, a) => sum + a.analysis.fillerWordCount, 0);
   const avgWpm = Math.round(
     answers.reduce((sum, a) => sum + a.analysis.wordsPerMinute, 0) / Math.max(1, answers.length),
@@ -80,6 +95,16 @@ export default function SessionSummary({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {weakest && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-xs font-medium text-slate-600">Recommended practice</p>
+          <p className="mt-1 text-sm text-slate-800">{CATEGORY_SUGGESTIONS[weakest.key]}</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Suggested next difficulty: {DIFFICULTY_LABELS[recommendedDifficulty(overallScore)]}
+          </p>
         </section>
       )}
 

@@ -31,6 +31,9 @@ export default function Home() {
   const [askedIds, setAskedIds] = useState<Set<string>>(new Set());
   const [answers, setAnswers] = useState<AnsweredQuestion[]>([]);
   const [lastAnswered, setLastAnswered] = useState<AnsweredQuestion | null>(null);
+  // Captured right before each answer's difficulty adjustment, so a retry
+  // can undo that shift instead of compounding two adjustments for one question.
+  const [difficultyBeforeAnswer, setDifficultyBeforeAnswer] = useState<Difficulty>("beginner");
 
   function handleStart(selectedJobType: JobType, selectedCount: number, selectedCameraEnabled: boolean) {
     const startDifficulty: Difficulty = "beginner";
@@ -47,15 +50,30 @@ export default function Home() {
     setPhase("asking");
   }
 
-  function handleSubmitAnswer(transcript: string, durationSeconds: number, engagement: EngagementSummary | null) {
+  function handleSubmitAnswer(
+    transcript: string,
+    durationSeconds: number,
+    engagement: EngagementSummary | null,
+    longestPauseSeconds: number,
+  ) {
     if (!currentQuestion) return;
-    const analysis = analyzeAnswer(transcript, durationSeconds, currentQuestion.starRelevant, engagement);
+    const analysis = analyzeAnswer(transcript, durationSeconds, currentQuestion.starRelevant, engagement, longestPauseSeconds);
     const answered: AnsweredQuestion = { question: currentQuestion, analysis };
 
+    setDifficultyBeforeAnswer(difficulty);
     setAnswers((prev) => [...prev, answered]);
     setDifficulty((d) => nextDifficulty(d, analysis.overallScore));
     setLastAnswered(answered);
     setPhase("feedback");
+  }
+
+  /** Discards the last answer and re-asks the same question, undoing the difficulty shift it caused. */
+  function handleRetry() {
+    if (!currentQuestion) return;
+    setAnswers((prev) => prev.slice(0, -1));
+    setDifficulty(difficultyBeforeAnswer);
+    setLastAnswered(null);
+    setPhase("asking");
   }
 
   function handleNext() {
@@ -112,7 +130,12 @@ export default function Home() {
       )}
 
       {phase === "feedback" && lastAnswered && (
-        <AnswerFeedback answered={lastAnswered} isLastQuestion={answers.length >= questionCount} onNext={handleNext} />
+        <AnswerFeedback
+          answered={lastAnswered}
+          isLastQuestion={answers.length >= questionCount}
+          onNext={handleNext}
+          onRetry={handleRetry}
+        />
       )}
 
       {phase === "summary" && <SessionSummary answers={answers} overallScore={overallScore} onPracticeAgain={handlePracticeAgain} />}

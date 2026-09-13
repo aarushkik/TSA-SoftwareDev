@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { scoreColor } from "@/components/MetricBar";
+import ScoreTrendChart from "@/components/ScoreTrendChart";
 import { clearSessions, deleteSession, getSessions, getSessionsServerSnapshot, subscribeSessions } from "@/lib/sessions";
 import { JOB_TYPE_LABELS } from "@/lib/types";
 
@@ -52,14 +53,19 @@ export default function ProgressPage() {
             </div>
           </div>
 
-          {trend !== null && (
-            <p className="mt-3 text-center text-xs text-slate-500">
-              {trend > 0
-                ? `Your scores have trended up ${trend} points from your earliest to most recent sessions.`
-                : trend < 0
-                  ? `Your scores have dipped ${Math.abs(trend)} points recently — a rough session or two is normal.`
-                  : "Your scores have stayed steady across sessions."}
-            </p>
+          {chronological.length >= 2 && (
+            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+              <ScoreTrendChart scores={chronological.map((s) => s.overallScore)} />
+              {trend !== null && (
+                <p className="mt-1 text-center text-xs text-slate-500">
+                  {trend > 0
+                    ? `Trending up ${trend} points from your earliest to most recent session.`
+                    : trend < 0
+                      ? `Dipped ${Math.abs(trend)} points recently — a rough session or two is normal.`
+                      : "Holding steady across your sessions."}
+                </p>
+              )}
+            </div>
           )}
 
           <div className="mt-5 flex items-center justify-between">

@@ -29,6 +29,11 @@ const LENGTH_PENALTY_PER_WORD = 0.6;
 /** Fewer camera samples than this during an answer isn't enough to score reliably. */
 const MIN_ENGAGEMENT_SAMPLES = 3;
 
+/** A gap this long between recognized speech segments counts as a notable pause. */
+const NOTABLE_PAUSE_SECONDS = 4;
+/** Points lost from the pace score per second the longest pause exceeds the threshold above. */
+const PAUSE_PENALTY_PER_SECOND = 4;
+
 export const WEIGHTS = {
   communication: 0.25,
   pace: 0.2,
@@ -80,6 +85,7 @@ export function analyzeAnswer(
   durationSeconds: number,
   starRelevant: boolean,
   engagement: EngagementSummary | null = null,
+  longestPauseSeconds = 0,
 ): AnswerAnalysis {
   const wordCount = countWords(transcript);
   const fillerWords = findFillerWords(transcript);
@@ -115,22 +121,30 @@ export function analyzeAnswer(
     });
   }
 
-  // Pace: words per minute against a natural conversational range.
+  // Pace: words per minute against a natural conversational range, plus a
+  // penalty for a notably long pause (silence between recognized speech
+  // segments) — both are about the flow of the answer, not its content.
   if (wordCount === 0 || durationSeconds <= 0) {
     metrics.push({ key: "pace", label: "Speaking pace", detail: "Not enough speech to measure pace", available: false });
   } else {
     const under = Math.max(0, PACE_IDEAL_MIN_WPM - wordsPerMinute);
     const over = Math.max(0, wordsPerMinute - PACE_IDEAL_MAX_WPM);
-    rawScores.pace = clamp(100 - (under + over) * PACE_PENALTY_PER_WPM);
+    const pauseOverage = Math.max(0, longestPauseSeconds - NOTABLE_PAUSE_SECONDS);
+    rawScores.pace = clamp(100 - (under + over) * PACE_PENALTY_PER_WPM - pauseOverage * PAUSE_PENALTY_PER_SECOND);
+
+    const paceDetail =
+      wordsPerMinute < PACE_IDEAL_MIN_WPM
+        ? `${Math.round(wordsPerMinute)} words per minute — a little slow, which can read as hesitant`
+        : wordsPerMinute > PACE_IDEAL_MAX_WPM
+          ? `${Math.round(wordsPerMinute)} words per minute — a little fast; slowing down aids clarity`
+          : `${Math.round(wordsPerMinute)} words per minute — a natural, easy-to-follow pace`;
+    const pauseDetail =
+      pauseOverage > 0 ? ` Longest pause: ${longestPauseSeconds.toFixed(1)}s — okay occasionally, but a long silence can read as struggling to organize your answer.` : "";
+
     metrics.push({
       key: "pace",
       label: "Speaking pace",
-      detail:
-        wordsPerMinute < PACE_IDEAL_MIN_WPM
-          ? `${Math.round(wordsPerMinute)} words per minute — a little slow, which can read as hesitant`
-          : wordsPerMinute > PACE_IDEAL_MAX_WPM
-            ? `${Math.round(wordsPerMinute)} words per minute — a little fast; slowing down aids clarity`
-            : `${Math.round(wordsPerMinute)} words per minute — a natural, easy-to-follow pace`,
+      detail: paceDetail + pauseDetail,
       available: true,
     });
   }
@@ -222,6 +236,7 @@ export function analyzeAnswer(
     wordsPerMinute,
     fillerWordCount: fillerWords.length,
     fillerWords,
+    longestPauseSeconds,
     starParts,
     metrics: finalMetrics,
     overallScore,

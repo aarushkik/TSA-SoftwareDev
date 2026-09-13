@@ -1,16 +1,27 @@
 import MetricBar, { scoreColor } from "./MetricBar";
 import type { AnsweredQuestion } from "@/lib/types";
 
+function fillerBreakdown(fillerWords: string[]): { word: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const word of fillerWords) counts.set(word, (counts.get(word) ?? 0) + 1);
+  return Array.from(counts.entries())
+    .map(([word, count]) => ({ word, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
 export default function AnswerFeedback({
   answered,
   isLastQuestion,
   onNext,
+  onRetry,
 }: {
   answered: AnsweredQuestion;
   isLastQuestion: boolean;
   onNext: () => void;
+  onRetry: () => void;
 }) {
   const { question, analysis } = answered;
+  const breakdown = fillerBreakdown(analysis.fillerWords);
 
   return (
     <div className="mx-auto max-w-lg space-y-3">
@@ -30,6 +41,19 @@ export default function AnswerFeedback({
           ))}
         </ul>
 
+        {breakdown.length > 0 && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <p className="text-xs font-medium text-slate-600">Filler words used</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {breakdown.map(({ word, count }) => (
+                <span key={word} className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                  &ldquo;{word}&rdquo; ×{count}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {analysis.transcript && (
           <div className="mt-3 border-t border-slate-100 pt-3">
             <p className="text-xs font-medium text-slate-600">What you said</p>
@@ -45,13 +69,22 @@ export default function AnswerFeedback({
         </section>
       )}
 
-      <button
-        type="button"
-        onClick={onNext}
-        className="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700"
-      >
-        {isLastQuestion ? "Finish session" : "Next question"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onRetry}
+          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300"
+        >
+          Try again
+        </button>
+        <button
+          type="button"
+          onClick={onNext}
+          className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700"
+        >
+          {isLastQuestion ? "Finish session" : "Next question"}
+        </button>
+      </div>
     </div>
   );
 }
