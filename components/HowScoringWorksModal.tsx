@@ -1,40 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { WEIGHTS } from "@/lib/analysis";
-import type { Metric } from "@/lib/types";
-
-const FACTOR_COPY: Record<Metric["key"], { detail: string }> = {
-  communication: {
-    detail: "Word count against a natural range for a well-developed answer — too short reads as underdeveloped, too long as rambling.",
-  },
-  pace: {
-    detail: "Words per minute. 110–165 wpm is a natural conversational pace; much slower reads as hesitant, much faster as rushed.",
-  },
-  fillerControl: {
-    detail: "Filler words (\"um\", \"like\", \"basically\"...) counted per 100 words, so longer answers aren't unfairly penalized for having more raw words.",
-  },
-  structure: {
-    detail: "For behavioral questions only: whether your answer's wording shows Situation, Task, Action, and Result cues — the STAR method.",
-  },
-  engagement: {
-    detail: "When camera analysis is on: the % of camera checks where your face was detected and roughly centred — a facing-the-camera proxy, not real gaze tracking.",
-  },
-  vocalEnergy: {
-    detail: "How much your microphone volume varied while you spoke, measured directly from the audio. Flat volume scores lower; natural variation scores higher. This measures expressiveness, not confidence or emotion.",
-  },
-};
-
-const METRIC_LABELS: Record<Metric["key"], string> = {
-  communication: "Response substance",
-  pace: "Speaking pace",
-  fillerControl: "Filler word control",
-  structure: "Answer structure (STAR)",
-  engagement: "Eye contact & engagement",
-  vocalEnergy: "Vocal energy",
-};
+import { useEffect, useState } from "react";
+import { METRIC_EXPLANATIONS, METRIC_TIPS, WEIGHTS } from "@/lib/analysis";
+import { METRIC_LABELS, type Metric } from "@/lib/types";
 
 export default function HowScoringWorksModal({ onClose }: { onClose: () => void }) {
+  const [expanded, setExpanded] = useState<Metric["key"] | null>(null);
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -69,21 +41,64 @@ export default function HowScoringWorksModal({ onClose }: { onClose: () => void 
         </div>
 
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Every score is measured directly from your transcript, timing, and (if enabled) the camera — never from a
-          language model guessing how good your answer &ldquo;felt&rdquo;. Each metric below is weighted, and the
-          weights always sum to 100%.
+          Every score is measured directly from your transcript, timing, and (if enabled) the camera and microphone —
+          never from a language model guessing how good your answer &ldquo;felt&rdquo;. Each metric below is
+          weighted, and the weights always sum to 100%. Tap a metric for the full breakdown.
         </p>
 
         <ul className="mt-4 divide-y divide-slate-100">
-          {(Object.keys(WEIGHTS) as Metric["key"][]).map((key) => (
-            <li key={key} className="py-3">
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-sm font-medium text-slate-800">{METRIC_LABELS[key]}</span>
-                <span className="shrink-0 text-xs font-semibold text-teal-700">{Math.round(WEIGHTS[key] * 100)}%</span>
-              </div>
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">{FACTOR_COPY[key].detail}</p>
-            </li>
-          ))}
+          {(Object.keys(WEIGHTS) as Metric["key"][]).map((key) => {
+            const isOpen = expanded === key;
+            const explanation = METRIC_EXPLANATIONS[key];
+            return (
+              <li key={key} className="py-1">
+                <button
+                  type="button"
+                  onClick={() => setExpanded(isOpen ? null : key)}
+                  aria-expanded={isOpen}
+                  className="flex w-full items-baseline justify-between gap-3 py-2 text-left"
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      className={`shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-90" : ""}`}
+                      aria-hidden
+                    >
+                      <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    {METRIC_LABELS[key]}
+                  </span>
+                  <span className="shrink-0 text-xs font-semibold text-teal-700">{Math.round(WEIGHTS[key] * 100)}%</span>
+                </button>
+
+                {isOpen && (
+                  <div className="space-y-2 pb-3 pl-[18px] text-xs leading-relaxed text-slate-500">
+                    <p>
+                      <span className="font-medium text-slate-600">What we measure — </span>
+                      {explanation.whatWeMeasure}
+                    </p>
+                    <p>
+                      <span className="font-medium text-slate-600">Why it matters — </span>
+                      {explanation.whyItMatters}
+                    </p>
+                    <p>
+                      <span className="font-medium text-slate-600">How it&apos;s scored — </span>
+                      {explanation.howScored}
+                    </p>
+                    <p className="rounded-lg bg-teal-50 p-2 text-teal-800">
+                      <span className="font-medium">Tip — </span>
+                      {METRIC_TIPS[key]}
+                    </p>
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">

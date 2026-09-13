@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { analyzeAnswer, buildWeights, WEIGHTS } from "./analysis.ts";
+import { analyzeAnswer, buildWeights, METRIC_EXPLANATIONS, METRIC_TIPS, WEIGHTS } from "./analysis.ts";
 
 function metric(analysis: ReturnType<typeof analyzeAnswer>, key: string) {
   const m = analysis.metrics.find((m) => m.key === key);
@@ -128,4 +128,17 @@ test("a long pause lowers the pace score, and a short one doesn't", () => {
   assert.equal(metric(noPause, "pace").score, metric(shortPause, "pace").score);
   assert.ok(metric(longPause, "pace").score < metric(noPause, "pace").score);
   assert.match(metric(longPause, "pace").detail, /longest pause/i);
+});
+
+test("every metric has a tip and a full explanation, matching the weight table's keys", () => {
+  const keys = Object.keys(WEIGHTS);
+  assert.deepEqual(Object.keys(METRIC_TIPS).sort(), keys.sort());
+  assert.deepEqual(Object.keys(METRIC_EXPLANATIONS).sort(), keys.sort());
+  for (const key of keys) {
+    const k = key as keyof typeof METRIC_EXPLANATIONS;
+    assert.ok(METRIC_TIPS[k].length > 0);
+    assert.ok(METRIC_EXPLANATIONS[k].whatWeMeasure.length > 0);
+    assert.ok(METRIC_EXPLANATIONS[k].whyItMatters.length > 0);
+    assert.ok(METRIC_EXPLANATIONS[k].howScored.length > 0);
+  }
 });

@@ -16,11 +16,30 @@ import {
   isSessionRecord,
   subscribeSessions,
 } from "@/lib/sessions";
-import { JOB_TYPE_LABELS } from "@/lib/types";
+import { JOB_TYPE_LABELS, METRIC_LABELS, type Metric, type SessionRecord } from "@/lib/types";
 
 function average(values: number[]): number {
   if (values.length === 0) return 0;
   return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
+}
+
+/** Average of each measured metric across every session, for a "where do I stand overall" view — not just the most recent session. */
+function metricAveragesAcrossSessions(sessions: SessionRecord[]): { key: Metric["key"]; average: number }[] {
+  const totals = new Map<Metric["key"], { sum: number; count: number }>();
+  for (const s of sessions) {
+    for (const a of s.answers) {
+      for (const m of a.analysis.metrics) {
+        if (!m.available) continue;
+        const entry = totals.get(m.key) ?? { sum: 0, count: 0 };
+        entry.sum += m.score;
+        entry.count += 1;
+        totals.set(m.key, entry);
+      }
+    }
+  }
+  return Array.from(totals.entries())
+    .map(([key, { sum, count }]) => ({ key, average: Math.round(sum / count) }))
+    .sort((a, b) => b.average - a.average);
 }
 
 const WEEKLY_GOAL_KEY = "interview-coach.weekly-goal.v1";
@@ -109,6 +128,7 @@ export default function ProgressPage() {
     chronological.length >= 2 ? average(secondHalf.map((s) => s.overallScore)) - average(firstHalf.map((s) => s.overallScore)) : null;
   const streak = currentStreakDays(sessions);
   const unlocked = new Set(unlockedAchievements(sessions).map((a) => a.id));
+  const metricAverages = metricAveragesAcrossSessions(sessions);
 
   return (
     <main className="mx-auto max-w-2xl flex-1 animate-fade-in px-4 py-10">
@@ -206,6 +226,28 @@ export default function ProgressPage() {
                       : "Holding steady across your sessions."}
                 </p>
               )}
+            </div>
+          )}
+
+          {metricAverages.length > 0 && (
+            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-medium text-slate-500">All-time strengths & focus areas</p>
+              <ul className="mt-3 space-y-2.5">
+                {metricAverages.map((m) => (
+                  <li key={m.key}>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-slate-700">{METRIC_LABELS[m.key]}</span>
+                      <span className={`font-semibold tabular-nums ${scoreColor(m.average)}`}>{m.average}/100</span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className={`h-full rounded-full ${m.average >= 80 ? "bg-teal-600" : m.average >= 60 ? "bg-amber-500" : "bg-rose-500"}`}
+                        style={{ width: `${Math.max(2, m.average)}%` }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

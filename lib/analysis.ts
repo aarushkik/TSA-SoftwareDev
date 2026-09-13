@@ -63,6 +63,56 @@ export const METRIC_TIPS: Record<Metric["key"], string> = {
   vocalEnergy: "Practice varying your tone instead of speaking in a flat monotone.",
 };
 
+export type MetricExplanation = {
+  /** The concrete signal that's measured — no vague "we analyze your answer" language. */
+  whatWeMeasure: string;
+  /** Why an interviewer would actually care about this. */
+  whyItMatters: string;
+  /** The scoring rule in plain terms, built from the same constants the scorer itself uses. */
+  howScored: string;
+};
+
+/**
+ * A full breakdown of each metric, built directly from the same constants
+ * the scorer uses above — so this explanation can never drift out of sync
+ * with what's actually measured. Shown in "How scoring works" and per-answer.
+ */
+export const METRIC_EXPLANATIONS: Record<Metric["key"], MetricExplanation> = {
+  communication: {
+    whatWeMeasure: `Your answer's word count, compared against a ${LENGTH_IDEAL_MIN_WORDS}-${LENGTH_IDEAL_MAX_WORDS} word range typical of a well-developed spoken answer.`,
+    whyItMatters:
+      "Too short reads as underdeveloped or unprepared; too long reads as rambling and risks losing an interviewer's attention.",
+    howScored: `Full marks inside the ideal range. Outside it, you lose about ${LENGTH_PENALTY_PER_WORD} points per word over or under the range.`,
+  },
+  pace: {
+    whatWeMeasure: "Words spoken per minute, plus the longest silent gap between recognized speech segments.",
+    whyItMatters:
+      "A natural conversational pace is easier to follow — speaking too fast can read as rushed or nervous, too slow as hesitant or unprepared.",
+    howScored: `Full marks between ${PACE_IDEAL_MIN_WPM}-${PACE_IDEAL_MAX_WPM} words per minute. Outside that range you lose about ${PACE_PENALTY_PER_WPM} points per word-per-minute, plus ${PAUSE_PENALTY_PER_SECOND} points per second a pause exceeds ${NOTABLE_PAUSE_SECONDS}s.`,
+  },
+  fillerControl: {
+    whatWeMeasure: `Filler words and phrases (${FILLER_WORDS.map((f) => `"${f}"`).join(", ")}) counted as a rate per 100 words, not a raw count.`,
+    whyItMatters: "Frequent fillers can make an answer sound less confident or prepared, even when the content itself is strong.",
+    howScored: `You lose about ${FILLER_PENALTY_PER_RATE} points per filler word per 100 words spoken.`,
+  },
+  structure: {
+    whatWeMeasure: "Whether your answer's wording contains cues for each part of the STAR method: Situation, Task, Action, Result.",
+    whyItMatters:
+      "Structured answers are easier for an interviewer to follow and show you can reason through the point of a story, not just recount it.",
+    howScored: "25 points per STAR part detected. Only scored for behavioral questions — other questions redistribute this weight.",
+  },
+  engagement: {
+    whatWeMeasure: "The share of camera checks (roughly every 0.4s) where a face was visible and roughly centered in frame.",
+    whyItMatters: "Consistent eye contact with the camera — standing in for the interviewer — signals confidence and attentiveness.",
+    howScored: `Score = percent of checks with a centered face. Requires at least ${MIN_ENGAGEMENT_SAMPLES} samples and camera analysis turned on.`,
+  },
+  vocalEnergy: {
+    whatWeMeasure: "How much your microphone volume varied while you spoke, measured as the coefficient of variation (std. dev. ÷ mean).",
+    whyItMatters: "Varying your tone helps emphasize key points and keeps an interviewer engaged; a flat monotone can undersell a strong answer.",
+    howScored: `Full marks at a coefficient of variation of ${VOCAL_CV_FOR_FULL_SCORE} or higher. Requires at least ${MIN_VOCAL_SAMPLES} audio samples.`,
+  },
+};
+
 /** How much weight a stated priority adds to its metric; the rest of the table scales down proportionally so it still sums to 1. */
 const PRIORITY_BOOST = 0.12;
 

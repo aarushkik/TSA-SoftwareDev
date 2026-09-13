@@ -6,16 +6,15 @@ import CountUpNumber from "./CountUpNumber";
 import { scoreColor } from "./MetricBar";
 import { METRIC_TIPS } from "@/lib/analysis";
 import { updateSessionNotes } from "@/lib/sessions";
-import { DIFFICULTY_LABELS, JOB_TYPE_LABELS, type AnsweredQuestion, type Difficulty, type JobType, type Metric } from "@/lib/types";
-
-const METRIC_LABELS: Record<Metric["key"], string> = {
-  communication: "Response substance",
-  pace: "Speaking pace",
-  fillerControl: "Filler word control",
-  structure: "Answer structure",
-  engagement: "Eye contact & engagement",
-  vocalEnergy: "Vocal energy",
-};
+import {
+  DIFFICULTY_LABELS,
+  JOB_TYPE_LABELS,
+  METRIC_LABELS,
+  type AnsweredQuestion,
+  type Difficulty,
+  type JobType,
+  type Metric,
+} from "@/lib/types";
 
 function recommendedDifficulty(score: number): Difficulty {
   if (score >= 80) return "advanced";

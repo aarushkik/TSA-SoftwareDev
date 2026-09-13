@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   DIFFICULTY_LABELS,
   JOB_TYPE_LABELS,
+  METRIC_LABELS,
   type CategoryFilter,
   type Difficulty,
   type JobType,
@@ -24,6 +25,8 @@ const CATEGORIES = Object.keys(CATEGORY_LABELS) as CategoryFilter[];
 
 const DIFFICULTY_OPTIONS: (Difficulty | null)[] = [null, "beginner", "intermediate", "advanced"];
 
+const LAST_SETTINGS_KEY = "interview-coach.last-settings.v1";
+
 const TIME_LIMIT_OPTIONS: (number | null)[] = [null, 60, 90, 120];
 const TIME_LIMIT_LABELS: Record<string, string> = {
   none: "No limit",
@@ -32,15 +35,7 @@ const TIME_LIMIT_LABELS: Record<string, string> = {
   "120": "120s",
 };
 
-const PRIORITY_LABELS: Record<Metric["key"], string> = {
-  communication: "Response substance",
-  pace: "Speaking pace",
-  fillerControl: "Filler word control",
-  structure: "Answer structure",
-  engagement: "Eye contact & engagement",
-  vocalEnergy: "Vocal energy",
-};
-const PRIORITY_OPTIONS: (Metric["key"] | null)[] = [null, ...(Object.keys(PRIORITY_LABELS) as Metric["key"][])];
+const PRIORITY_OPTIONS: (Metric["key"] | null)[] = [null, ...(Object.keys(METRIC_LABELS) as Metric["key"][])];
 
 const JOB_TYPE_ICONS: Record<JobType, ReactNode> = {
   general: (
@@ -104,6 +99,53 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
     window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
     return () => window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
   }, []);
+
+  // Restores whatever setup a returning user last practiced with, so they
+  // don't have to reconfigure everything on every visit.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(LAST_SETTINGS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Partial<StartOptions>;
+      queueMicrotask(() => {
+        if (saved.jobType) setJobType(saved.jobType);
+        if (saved.questionCount) setQuestionCount(saved.questionCount);
+        if (typeof saved.cameraEnabled === "boolean") setCameraEnabled(saved.cameraEnabled);
+        if (saved.category) setCategory(saved.category);
+        if (saved.priority !== undefined) setPriority(saved.priority);
+        if (saved.fixedDifficulty !== undefined) setFixedDifficulty(saved.fixedDifficulty);
+        if (typeof saved.readAloud === "boolean") setReadAloud(saved.readAloud);
+        if (saved.voiceURI !== undefined) setVoiceURI(saved.voiceURI);
+        if (typeof saved.speechRate === "number") setSpeechRate(saved.speechRate);
+        if (typeof saved.examMode === "boolean") setExamMode(saved.examMode);
+        if (saved.timeLimitSeconds !== undefined) setTimeLimitSeconds(saved.timeLimitSeconds);
+      });
+    } catch {
+      // Malformed or missing data — the defaults above stand.
+    }
+  }, []);
+
+  function handleStart() {
+    const options: StartOptions = {
+      jobType,
+      questionCount,
+      cameraEnabled,
+      category,
+      priority,
+      fixedDifficulty,
+      readAloud,
+      voiceURI,
+      speechRate,
+      examMode,
+      timeLimitSeconds,
+    };
+    try {
+      window.localStorage.setItem(LAST_SETTINGS_KEY, JSON.stringify(options));
+    } catch {
+      // Private browsing or a full quota: the choice just won't be remembered next time.
+    }
+    onStart(options);
+  }
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-6">
@@ -228,7 +270,7 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
               <option value="">Balanced (default)</option>
               {PRIORITY_OPTIONS.filter((p): p is Metric["key"] => p !== null).map((p) => (
                 <option key={p} value={p}>
-                  {PRIORITY_LABELS[p]}
+                  {METRIC_LABELS[p]}
                 </option>
               ))}
             </select>
@@ -359,21 +401,7 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
 
       <button
         type="button"
-        onClick={() =>
-          onStart({
-            jobType,
-            questionCount,
-            cameraEnabled,
-            category,
-            priority,
-            fixedDifficulty,
-            readAloud,
-            voiceURI,
-            speechRate,
-            examMode,
-            timeLimitSeconds,
-          })
-        }
+        onClick={handleStart}
         className="mt-4 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 active:scale-[0.98]"
       >
         Start practice session

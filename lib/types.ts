@@ -27,6 +27,15 @@ export const CATEGORY_LABELS_BASE: Record<QuestionCategory, string> = {
   technical: "Technical",
 };
 
+export const METRIC_LABELS: Record<Metric["key"], string> = {
+  communication: "Response substance",
+  pace: "Speaking pace",
+  fillerControl: "Filler word control",
+  structure: "Answer structure",
+  engagement: "Eye contact & engagement",
+  vocalEnergy: "Vocal energy",
+};
+
 export type Question = {
   id: string;
   text: string;
