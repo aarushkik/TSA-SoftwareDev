@@ -1,25 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useFaceEngagement } from "@/lib/useFaceEngagement";
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
-import { DIFFICULTY_LABELS, type Question } from "@/lib/types";
+import { DIFFICULTY_LABELS, type EngagementSummary, type Question } from "@/lib/types";
 
 export default function QuestionCard({
   question,
   questionNumber,
   totalQuestions,
+  cameraEnabled,
   onSubmit,
 }: {
   question: Question;
   questionNumber: number;
   totalQuestions: number;
-  onSubmit: (transcript: string, durationSeconds: number) => void;
+  cameraEnabled: boolean;
+  onSubmit: (transcript: string, durationSeconds: number, engagement: EngagementSummary | null) => void;
 }) {
   const { transcript, interim, state, error, start, stop } = useSpeechRecognition();
+  const face = useFaceEngagement();
   const [typedAnswer, setTypedAnswer] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const startedAtRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -34,19 +39,21 @@ export default function QuestionCard({
       if (startedAtRef.current) setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
     }, 250);
     start();
+    if (cameraEnabled && videoRef.current) void face.start(videoRef.current);
   }
 
   function handleStopAndSubmit() {
     if (timerRef.current) clearInterval(timerRef.current);
     const result = stop();
-    onSubmit(result.transcript, result.durationSeconds);
+    const engagementSummary = cameraEnabled ? face.stop() : null;
+    onSubmit(result.transcript, result.durationSeconds, engagementSummary);
   }
 
   function handleTypedSubmit() {
     // A rough words-per-minute baseline for typed answers: 40 wpm reading/composing pace.
     const wordCount = typedAnswer.trim().split(/\s+/).filter(Boolean).length;
     const estimatedSeconds = Math.max(10, (wordCount / 40) * 60);
-    onSubmit(typedAnswer.trim(), estimatedSeconds);
+    onSubmit(typedAnswer.trim(), estimatedSeconds, null);
   }
 
   return (
@@ -61,6 +68,26 @@ export default function QuestionCard({
       </div>
 
       <p className="mt-3 text-lg font-medium leading-snug text-slate-900">{question.text}</p>
+
+      {cameraEnabled && (
+        <div className="mt-4 flex items-center gap-3">
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            className={`h-20 w-28 rounded-lg border border-slate-200 bg-slate-900 object-cover [transform:scaleX(-1)] ${
+              state === "listening" ? "" : "opacity-40"
+            }`}
+          />
+          <p className="text-xs text-slate-500">
+            {face.state === "active"
+              ? "Camera analysis running — checking that you're facing the camera."
+              : face.state === "denied" || face.state === "unsupported"
+                ? (face.error ?? "Camera analysis is unavailable — continuing with voice only.")
+                : "Camera will start when you begin answering."}
+          </p>
+        </div>
+      )}
 
       {state === "unsupported" ? (
         <div className="mt-5">

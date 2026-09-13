@@ -8,7 +8,7 @@ import SessionSummary from "@/components/SessionSummary";
 import { analyzeAnswer } from "@/lib/analysis";
 import { pickNextQuestion } from "@/lib/questions";
 import { saveSession } from "@/lib/sessions";
-import type { AnsweredQuestion, Difficulty, JobType, Question, SessionRecord } from "@/lib/types";
+import type { AnsweredQuestion, Difficulty, EngagementSummary, JobType, Question, SessionRecord } from "@/lib/types";
 
 type Phase = "setup" | "asking" | "feedback" | "summary";
 
@@ -25,19 +25,21 @@ export default function Home() {
   const [phase, setPhase] = useState<Phase>("setup");
   const [jobType, setJobType] = useState<JobType>("general");
   const [questionCount, setQuestionCount] = useState(5);
+  const [cameraEnabled, setCameraEnabled] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>("beginner");
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [askedIds, setAskedIds] = useState<Set<string>>(new Set());
   const [answers, setAnswers] = useState<AnsweredQuestion[]>([]);
   const [lastAnswered, setLastAnswered] = useState<AnsweredQuestion | null>(null);
 
-  function handleStart(selectedJobType: JobType, selectedCount: number) {
+  function handleStart(selectedJobType: JobType, selectedCount: number, selectedCameraEnabled: boolean) {
     const startDifficulty: Difficulty = "beginner";
     const first = pickNextQuestion(selectedJobType, startDifficulty, new Set());
     if (!first) return;
 
     setJobType(selectedJobType);
     setQuestionCount(selectedCount);
+    setCameraEnabled(selectedCameraEnabled);
     setDifficulty(startDifficulty);
     setAskedIds(new Set([first.id]));
     setAnswers([]);
@@ -45,9 +47,9 @@ export default function Home() {
     setPhase("asking");
   }
 
-  function handleSubmitAnswer(transcript: string, durationSeconds: number) {
+  function handleSubmitAnswer(transcript: string, durationSeconds: number, engagement: EngagementSummary | null) {
     if (!currentQuestion) return;
-    const analysis = analyzeAnswer(transcript, durationSeconds, currentQuestion.starRelevant);
+    const analysis = analyzeAnswer(transcript, durationSeconds, currentQuestion.starRelevant, engagement);
     const answered: AnsweredQuestion = { question: currentQuestion, analysis };
 
     setAnswers((prev) => [...prev, answered]);
@@ -104,6 +106,7 @@ export default function Home() {
           question={currentQuestion}
           questionNumber={answers.length + 1}
           totalQuestions={questionCount}
+          cameraEnabled={cameraEnabled}
           onSubmit={handleSubmitAnswer}
         />
       )}

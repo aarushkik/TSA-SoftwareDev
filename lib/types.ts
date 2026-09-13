@@ -51,6 +51,13 @@ export type StarParts = {
   result: boolean;
 };
 
+/** Raw counts from the browser-side face-detection loop — see useFaceEngagement. */
+export type EngagementSummary = {
+  totalSamples: number;
+  samplesWithFace: number;
+  samplesCentered: number;
+};
+
 export type AnswerAnalysis = {
   transcript: string;
   wordCount: number;

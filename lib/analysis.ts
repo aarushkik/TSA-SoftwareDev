@@ -1,11 +1,11 @@
-import type { AnswerAnalysis, Metric, StarParts } from "./types";
+import type { AnswerAnalysis, EngagementSummary, Metric, StarParts } from "./types";
 
 /**
  * Interview performance scoring.
  *
  * Every metric is measured directly from the transcript and timing of a
  * single answer — no AI model, no invented confidence number. A metric that
- * can't be measured yet (eye contact needs camera analysis, not shipped)
+ * can't be measured (camera analysis wasn't turned on for this session)
  * is marked unavailable and its weight is redistributed across the metrics
  * that were actually measured, the same way PathSafe redistributes an
  * unavailable safety factor rather than guessing at it.
@@ -26,7 +26,10 @@ const LENGTH_IDEAL_MAX_WORDS = 220;
 /** Points lost per word outside the ideal length range. */
 const LENGTH_PENALTY_PER_WORD = 0.6;
 
-const WEIGHTS = {
+/** Fewer camera samples than this during an answer isn't enough to score reliably. */
+const MIN_ENGAGEMENT_SAMPLES = 3;
+
+export const WEIGHTS = {
   communication: 0.25,
   pace: 0.2,
   fillerControl: 0.2,
@@ -72,7 +75,12 @@ function detectStarParts(transcript: string): StarParts {
   };
 }
 
-export function analyzeAnswer(transcript: string, durationSeconds: number, starRelevant: boolean): AnswerAnalysis {
+export function analyzeAnswer(
+  transcript: string,
+  durationSeconds: number,
+  starRelevant: boolean,
+  engagement: EngagementSummary | null = null,
+): AnswerAnalysis {
   const wordCount = countWords(transcript);
   const fillerWords = findFillerWords(transcript);
   const wordsPerMinute = durationSeconds > 0 ? (wordCount / durationSeconds) * 60 : 0;
@@ -162,14 +170,30 @@ export function analyzeAnswer(transcript: string, durationSeconds: number, starR
     });
   }
 
-  // Engagement (eye contact / body language) needs camera analysis, which
-  // this build doesn't do yet — marked unavailable rather than invented.
-  metrics.push({
-    key: "engagement",
-    label: "Eye contact & engagement",
-    detail: "Camera-based tracking isn't enabled for this session",
-    available: false,
-  });
+  // Engagement: % of camera samples where a face was detected and roughly
+  // centred in frame (a facing-the-camera proxy, not real gaze tracking —
+  // see useFaceEngagement). Unavailable if the camera wasn't on, or too few
+  // samples were captured to mean anything.
+  if (!engagement || engagement.totalSamples < MIN_ENGAGEMENT_SAMPLES) {
+    metrics.push({
+      key: "engagement",
+      label: "Eye contact & engagement",
+      detail: "Camera analysis wasn't enabled for this session",
+      available: false,
+    });
+  } else {
+    rawScores.engagement = clamp((engagement.samplesCentered / engagement.totalSamples) * 100);
+    const presentRate = Math.round((engagement.samplesWithFace / engagement.totalSamples) * 100);
+    metrics.push({
+      key: "engagement",
+      label: "Eye contact & engagement",
+      detail:
+        engagement.samplesWithFace === 0
+          ? "No face was detected in the camera frame during your answer"
+          : `Facing the camera in ${Math.round(rawScores.engagement)}% of camera checks (face visible ${presentRate}% of the time)`,
+      available: true,
+    });
+  }
 
   // Redistribute the weight of any unavailable metric across the rest, so
   // the weights always sum to 1 and the score never counts an unmeasured metric.

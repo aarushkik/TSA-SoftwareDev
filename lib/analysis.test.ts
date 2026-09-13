@@ -58,9 +58,22 @@ test("structure is not applicable, and its weight is redistributed, for a non-be
   assert.ok(available.length > 0);
 });
 
-test("engagement (eye contact) is always unavailable in this build and never invents a score", () => {
+test("engagement is unavailable when no camera summary is passed", () => {
   const a = analyzeAnswer("A perfectly fine, normal-length answer to the question that was asked here today.", 15, false);
   const engagement = metric(a, "engagement");
   assert.equal(engagement.available, false);
   assert.equal(engagement.score, 0);
+});
+
+test("engagement is unavailable when too few camera samples were captured", () => {
+  const a = analyzeAnswer("A fine answer.", 5, false, { totalSamples: 2, samplesWithFace: 2, samplesCentered: 2 });
+  assert.equal(metric(a, "engagement").available, false);
+});
+
+test("a mostly-centred face scores higher engagement than a mostly-absent one", () => {
+  const text = "A fine, reasonably developed answer to the question that was asked.";
+  const centered = analyzeAnswer(text, 15, false, { totalSamples: 10, samplesWithFace: 10, samplesCentered: 9 });
+  const absent = analyzeAnswer(text, 15, false, { totalSamples: 10, samplesWithFace: 2, samplesCentered: 1 });
+  assert.ok(metric(centered, "engagement").score > metric(absent, "engagement").score);
+  assert.equal(metric(centered, "engagement").available, true);
 });

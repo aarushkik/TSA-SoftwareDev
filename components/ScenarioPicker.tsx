@@ -1,25 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { JOB_TYPE_LABELS, type JobType } from "@/lib/types";
 
 const JOB_TYPES = Object.keys(JOB_TYPE_LABELS) as JobType[];
 const QUESTION_COUNTS = [3, 5, 7];
 
+const JOB_TYPE_ICONS: Record<JobType, ReactNode> = {
+  general: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <circle cx="12" cy="8" r="3.2" />
+      <path d="M5 20c1.5-3.5 4.2-5.5 7-5.5s5.5 2 7 5.5" strokeLinecap="round" />
+    </svg>
+  ),
+  technology: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <rect x="3" y="4" width="18" height="12" rx="1.5" />
+      <path d="M8 20h8M12 16v4" strokeLinecap="round" />
+    </svg>
+  ),
+  business: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <rect x="3" y="8" width="18" height="12" rx="1.5" />
+      <path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2" strokeLinecap="round" />
+    </svg>
+  ),
+  customer_service: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path d="M4 13a8 8 0 0116 0" strokeLinecap="round" />
+      <rect x="3" y="13" width="4" height="6" rx="1" />
+      <rect x="17" y="13" width="4" height="6" rx="1" />
+    </svg>
+  ),
+  creative: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path d="M12 3a9 9 0 000 18c1.4 0 2-1 1.3-2.1-.4-.6-.1-1.4.6-1.5H16a4 4 0 004-4c0-5.5-3.6-10.4-8-10.4z" strokeLinejoin="round" />
+      <circle cx="8" cy="11" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="8" r="1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="11" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+};
+
 export default function ScenarioPicker({
   onStart,
 }: {
-  onStart: (jobType: JobType, questionCount: number) => void;
+  onStart: (jobType: JobType, questionCount: number, cameraEnabled: boolean) => void;
 }) {
   const [jobType, setJobType] = useState<JobType>("general");
   const [questionCount, setQuestionCount] = useState(5);
+  const [cameraEnabled, setCameraEnabled] = useState(false);
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-6">
-      <h1 className="text-xl font-semibold text-slate-900">Interview Coach</h1>
+      <h1 className="text-xl font-semibold text-slate-900">Start a practice session</h1>
       <p className="mt-1.5 text-sm text-slate-500">
-        Practice answering realistic interview questions out loud and get an immediate, transparent breakdown of your
-        response — pace, filler words, and answer structure, measured directly from what you said.
+        Answer realistic interview questions out loud and get an immediate, transparent breakdown of your response —
+        pace, filler words, and answer structure, measured directly from what you said.
       </p>
 
       <p className="mt-6 text-xs font-medium text-slate-600">What kind of role are you practicing for?</p>
@@ -30,12 +67,13 @@ export default function ScenarioPicker({
             type="button"
             onClick={() => setJobType(type)}
             aria-pressed={jobType === type}
-            className={`rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${
+            className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${
               jobType === type
                 ? "border-teal-600 bg-teal-50 text-teal-800"
                 : "border-slate-200 text-slate-600 hover:border-slate-300"
             }`}
           >
+            <span className={jobType === type ? "text-teal-600" : "text-slate-400"}>{JOB_TYPE_ICONS[type]}</span>
             {JOB_TYPE_LABELS[type]}
           </button>
         ))}
@@ -60,17 +98,39 @@ export default function ScenarioPicker({
         ))}
       </div>
 
+      <label className="mt-5 flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
+        <span className="min-w-0 pr-3">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+            Enable camera analysis
+            <span className="rounded-full bg-slate-200 px-1.5 py-px text-[9px] font-bold uppercase leading-tight text-slate-600">Beta</span>
+          </span>
+          <span className="mt-0.5 block text-xs text-slate-500">
+            Scores how often you face the camera during each answer. Video stays in your browser — nothing is uploaded.
+          </span>
+        </span>
+        <span className="relative inline-flex h-5 w-9 shrink-0 items-center">
+          <input
+            type="checkbox"
+            checked={cameraEnabled}
+            onChange={(e) => setCameraEnabled(e.target.checked)}
+            className="peer sr-only"
+          />
+          <span className="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-teal-600" />
+          <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-4" />
+        </span>
+      </label>
+
       <button
         type="button"
-        onClick={() => onStart(jobType, questionCount)}
-        className="mt-6 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700"
+        onClick={() => onStart(jobType, questionCount, cameraEnabled)}
+        className="mt-4 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700"
       >
         Start practice session
       </button>
 
       <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
-        Questions start at a beginner level and get harder as you score well. Your microphone is used only in your
-        browser to transcribe your answer — nothing is uploaded anywhere.
+        Questions start at a beginner level and get harder as you score well. Your microphone and camera are used only
+        in your browser to score your answer — nothing is uploaded anywhere.
       </p>
     </div>
   );

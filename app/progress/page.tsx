@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { scoreColor } from "@/components/MetricBar";
 import { clearSessions, deleteSession, getSessions, getSessionsServerSnapshot, subscribeSessions } from "@/lib/sessions";
@@ -29,12 +28,7 @@ export default function ProgressPage() {
 
   return (
     <main className="mx-auto max-w-2xl flex-1 px-4 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Your progress</h1>
-        <Link href="/" className="text-sm font-medium text-teal-700 hover:text-teal-800">
-          New session
-        </Link>
-      </div>
+      <h1 className="text-xl font-semibold text-slate-900">Your progress</h1>
 
       {sessions.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-dashed border-slate-200 p-8 text-center">
