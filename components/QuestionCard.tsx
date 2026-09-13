@@ -16,6 +16,8 @@ export default function QuestionCard({
   totalQuestions,
   cameraEnabled,
   readAloud,
+  voiceURI,
+  speechRate,
   timeLimitSeconds,
   onSubmit,
 }: {
@@ -24,6 +26,9 @@ export default function QuestionCard({
   totalQuestions: number;
   cameraEnabled: boolean;
   readAloud: boolean;
+  /** null = the browser's default voice. */
+  voiceURI: string | null;
+  speechRate: number;
   /** null = no limit; otherwise the recording auto-submits once this many seconds elapse. */
   timeLimitSeconds: number | null;
   onSubmit: (
@@ -49,7 +54,11 @@ export default function QuestionCard({
     if (!canSpeak) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(question.text);
-    utterance.rate = 1.0;
+    utterance.rate = speechRate;
+    if (voiceURI) {
+      const voice = window.speechSynthesis.getVoices().find((v) => v.voiceURI === voiceURI);
+      if (voice) utterance.voice = voice;
+    }
     utterance.onstart = () => setReading(true);
     utterance.onend = () => setReading(false);
     utterance.onerror = () => setReading(false);

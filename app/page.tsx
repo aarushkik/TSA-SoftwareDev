@@ -42,6 +42,8 @@ export default function Home() {
   const [priority, setPriority] = useState<Metric["key"] | null>(null);
   const [fixedDifficulty, setFixedDifficulty] = useState<Difficulty | null>(null);
   const [readAloud, setReadAloud] = useState(false);
+  const [voiceURI, setVoiceURI] = useState<string | null>(null);
+  const [speechRate, setSpeechRate] = useState(1);
   const [examMode, setExamMode] = useState(false);
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>("beginner");
@@ -71,6 +73,8 @@ export default function Home() {
       setPriority(null);
       setFixedDifficulty(question.difficulty);
       setReadAloud(false);
+      setVoiceURI(null);
+      setSpeechRate(1);
       setExamMode(false);
       setTimeLimitSeconds(null);
       setDifficulty(question.difficulty);
@@ -93,6 +97,8 @@ export default function Home() {
     setPriority(options.priority);
     setFixedDifficulty(options.fixedDifficulty);
     setReadAloud(options.readAloud);
+    setVoiceURI(options.voiceURI);
+    setSpeechRate(options.speechRate);
     setExamMode(options.examMode);
     setTimeLimitSeconds(options.timeLimitSeconds);
     setDifficulty(startDifficulty);
@@ -216,6 +222,8 @@ export default function Home() {
             totalQuestions={questionCount}
             cameraEnabled={cameraEnabled}
             readAloud={readAloud}
+            voiceURI={voiceURI}
+            speechRate={speechRate}
             timeLimitSeconds={timeLimitSeconds}
             onSubmit={handleSubmitAnswer}
           />

@@ -115,6 +115,10 @@ export type StartOptions = {
   /** null = adaptive difficulty, starting at beginner. */
   fixedDifficulty: Difficulty | null;
   readAloud: boolean;
+  /** null = the browser's default voice. */
+  voiceURI: string | null;
+  /** Speech synthesis rate; 1 is normal speed. */
+  speechRate: number;
   /** Exam mode holds every answer's feedback until the session ends, for a more realistic simulation. */
   examMode: boolean;
   /** null = no limit; otherwise the answer auto-submits when this many seconds elapse. */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   DIFFICULTY_LABELS,
   JOB_TYPE_LABELS,
@@ -86,8 +86,24 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
   const [priority, setPriority] = useState<Metric["key"] | null>(null);
   const [fixedDifficulty, setFixedDifficulty] = useState<Difficulty | null>(null);
   const [readAloud, setReadAloud] = useState(false);
+  const [voiceURI, setVoiceURI] = useState<string | null>(null);
+  const [speechRate, setSpeechRate] = useState(1);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [examMode, setExamMode] = useState(false);
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | null>(null);
+
+  // Voice lists load asynchronously in most browsers — the first call to
+  // getVoices() often returns empty until "voiceschanged" fires.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    function loadVoices() {
+      const available = window.speechSynthesis.getVoices();
+      if (available.length > 0) setVoices(available);
+    }
+    loadVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
+  }, []);
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-6">
@@ -233,6 +249,45 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
             </span>
           </label>
 
+          {readAloud && voices.length > 0 && (
+            <div className="space-y-2.5 rounded-lg bg-slate-50 p-3">
+              <div>
+                <label htmlFor="voice-select" className="text-[11px] font-medium text-slate-500">
+                  Voice
+                </label>
+                <select
+                  id="voice-select"
+                  value={voiceURI ?? ""}
+                  onChange={(e) => setVoiceURI(e.target.value || null)}
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-teal-600"
+                >
+                  <option value="">Browser default</option>
+                  {voices.map((v) => (
+                    <option key={v.voiceURI} value={v.voiceURI}>
+                      {v.name} ({v.lang})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="rate-slider" className="flex items-center justify-between text-[11px] font-medium text-slate-500">
+                  <span>Speaking rate</span>
+                  <span>{speechRate.toFixed(2)}x</span>
+                </label>
+                <input
+                  id="rate-slider"
+                  type="range"
+                  min={0.75}
+                  max={1.25}
+                  step={0.05}
+                  value={speechRate}
+                  onChange={(e) => setSpeechRate(Number(e.target.value))}
+                  className="mt-1 w-full accent-teal-600"
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <p className="text-xs font-medium text-slate-600">Time limit per answer</p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -313,6 +368,8 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
             priority,
             fixedDifficulty,
             readAloud,
+            voiceURI,
+            speechRate,
             examMode,
             timeLimitSeconds,
           })
