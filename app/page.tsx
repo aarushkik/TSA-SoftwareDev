@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AnswerFeedback from "@/components/AnswerFeedback";
 import QuestionCard from "@/components/QuestionCard";
 import ScenarioPicker from "@/components/ScenarioPicker";
 import SessionSummary from "@/components/SessionSummary";
 import { analyzeAnswer, buildWeights } from "@/lib/analysis";
-import { pickNextQuestion } from "@/lib/questions";
+import { getCustomQuestions } from "@/lib/customQuestions";
+import { findQuestionById, pickNextQuestion } from "@/lib/questions";
 import { saveSession } from "@/lib/sessions";
 import type {
   AnsweredQuestion,
@@ -41,6 +42,7 @@ export default function Home() {
   const [priority, setPriority] = useState<Metric["key"] | null>(null);
   const [fixedDifficulty, setFixedDifficulty] = useState<Difficulty | null>(null);
   const [readAloud, setReadAloud] = useState(false);
+  const [examMode, setExamMode] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>("beginner");
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [askedIds, setAskedIds] = useState<Set<string>>(new Set());
@@ -50,9 +52,35 @@ export default function Home() {
   // can undo that shift instead of compounding two adjustments for one question.
   const [difficultyBeforeAnswer, setDifficultyBeforeAnswer] = useState<Difficulty>("beginner");
 
+  // A "Practice this" link from the question browser (?practice=<id>) drops
+  // straight into a single-question session for that exact question.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const practiceId = params.get("practice");
+    if (!practiceId) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    const question = findQuestionById(practiceId, getCustomQuestions());
+    if (!question) return;
+    queueMicrotask(() => {
+      setJobType(question.jobTypes[0] ?? "general");
+      setQuestionCount(1);
+      setCameraEnabled(false);
+      setCategory("all");
+      setPriority(null);
+      setFixedDifficulty(question.difficulty);
+      setReadAloud(false);
+      setExamMode(false);
+      setDifficulty(question.difficulty);
+      setAskedIds(new Set([question.id]));
+      setAnswers([]);
+      setCurrentQuestion(question);
+      setPhase("asking");
+    });
+  }, []);
+
   function handleStart(options: StartOptions) {
     const startDifficulty: Difficulty = options.fixedDifficulty ?? "beginner";
-    const first = pickNextQuestion(options.jobType, startDifficulty, new Set(), options.category);
+    const first = pickNextQuestion(options.jobType, startDifficulty, new Set(), options.category, getCustomQuestions());
     if (!first) return;
 
     setJobType(options.jobType);
@@ -62,10 +90,45 @@ export default function Home() {
     setPriority(options.priority);
     setFixedDifficulty(options.fixedDifficulty);
     setReadAloud(options.readAloud);
+    setExamMode(options.examMode);
     setDifficulty(startDifficulty);
     setAskedIds(new Set([first.id]));
     setAnswers([]);
     setCurrentQuestion(first);
+    setPhase("asking");
+  }
+
+  function finishSession(finalAnswers: AnsweredQuestion[]) {
+    const overallScore = Math.round(
+      finalAnswers.reduce((sum, a) => sum + a.analysis.overallScore, 0) / finalAnswers.length,
+    );
+    const session: SessionRecord = {
+      id: `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+      completedAt: new Date().toISOString(),
+      jobType,
+      answers: finalAnswers,
+      overallScore,
+    };
+    saveSession(session);
+    setAnswers(finalAnswers);
+    setPhase("summary");
+  }
+
+  /** Shared by the "Next" button (normal mode) and exam mode's auto-advance. */
+  function advance(updatedAnswers: AnsweredQuestion[], currentDifficulty: Difficulty) {
+    if (updatedAnswers.length >= questionCount) {
+      finishSession(updatedAnswers);
+      return;
+    }
+    const next = pickNextQuestion(jobType, currentDifficulty, askedIds, category, getCustomQuestions());
+    if (!next) {
+      // Ran out of unique questions for this scenario — end the session early.
+      finishSession(updatedAnswers);
+      return;
+    }
+    setAskedIds((prev) => new Set(prev).add(next.id));
+    setCurrentQuestion(next);
+    setAnswers(updatedAnswers);
     setPhase("asking");
   }
 
@@ -87,14 +150,19 @@ export default function Home() {
       buildWeights(priority),
     );
     const answered: AnsweredQuestion = { question: currentQuestion, analysis };
+    const updatedAnswers = [...answers, answered];
 
     setDifficultyBeforeAnswer(difficulty);
-    setAnswers((prev) => [...prev, answered]);
     // A fixed difficulty means every question in the session stays at that
     // tier — no adaptive movement to undo.
-    if (fixedDifficulty === null) {
-      setDifficulty((d) => nextDifficulty(d, analysis.overallScore));
+    const newDifficulty = fixedDifficulty === null ? nextDifficulty(difficulty, analysis.overallScore) : difficulty;
+    setDifficulty(newDifficulty);
+
+    if (examMode) {
+      advance(updatedAnswers, newDifficulty);
+      return;
     }
+    setAnswers(updatedAnswers);
     setLastAnswered(answered);
     setPhase("feedback");
   }
@@ -109,31 +177,7 @@ export default function Home() {
   }
 
   function handleNext() {
-    if (answers.length >= questionCount) {
-      const overallScore = Math.round(
-        answers.reduce((sum, a) => sum + a.analysis.overallScore, 0) / answers.length,
-      );
-      const session: SessionRecord = {
-        id: `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
-        completedAt: new Date().toISOString(),
-        jobType,
-        answers,
-        overallScore,
-      };
-      saveSession(session);
-      setPhase("summary");
-      return;
-    }
-
-    const next = pickNextQuestion(jobType, difficulty, askedIds, category);
-    if (!next) {
-      // Ran out of unique questions for this scenario — end the session early.
-      handleNext();
-      return;
-    }
-    setAskedIds((prev) => new Set(prev).add(next.id));
-    setCurrentQuestion(next);
-    setPhase("asking");
+    advance(answers, difficulty);
   }
 
   function handlePracticeAgain() {

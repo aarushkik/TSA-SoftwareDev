@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { QUESTIONS, pickNextQuestion, questionsFor } from "./questions.ts";
+import { QUESTIONS, allQuestions, findQuestionById, pickNextQuestion, questionsFor } from "./questions.ts";
 import { JOB_TYPE_LABELS } from "./types.ts";
 import type { Difficulty, JobType } from "./types.ts";
 
@@ -54,4 +54,22 @@ test("extra (custom) questions are included alongside the built-in bank", () => 
   };
   const pool = questionsFor("general", "beginner", "all", [custom]);
   assert.ok(pool.some((q) => q.id === "custom-1"));
+});
+
+test("findQuestionById finds a built-in question and returns null for an unknown id", () => {
+  assert.equal(findQuestionById("q-tell-me-about-yourself")?.id, "q-tell-me-about-yourself");
+  assert.equal(findQuestionById("no-such-question"), null);
+});
+
+test("findQuestionById and allQuestions include extra (custom) questions", () => {
+  const custom = {
+    id: "custom-2",
+    text: "Another custom question",
+    category: "general" as const,
+    difficulty: "beginner" as const,
+    jobTypes: ["general" as const],
+    starRelevant: false,
+  };
+  assert.equal(findQuestionById("custom-2", [custom])?.id, "custom-2");
+  assert.equal(allQuestions([custom]).length, QUESTIONS.length + 1);
 });

@@ -78,6 +78,7 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
   const [priority, setPriority] = useState<Metric["key"] | null>(null);
   const [fixedDifficulty, setFixedDifficulty] = useState<Difficulty | null>(null);
   const [readAloud, setReadAloud] = useState(false);
+  const [examMode, setExamMode] = useState(false);
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-6">
@@ -222,6 +223,25 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
               <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-4" />
             </span>
           </label>
+
+          <label className="flex cursor-pointer items-start justify-between gap-3">
+            <span className="min-w-0">
+              <span className="block text-xs font-medium text-slate-700">Exam mode</span>
+              <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-400">
+                Holds all feedback until the end, like a real interview — no score between questions.
+              </span>
+            </span>
+            <span className="relative inline-flex h-5 w-9 shrink-0 items-center">
+              <input
+                type="checkbox"
+                checked={examMode}
+                onChange={(e) => setExamMode(e.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-teal-600" />
+              <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-4" />
+            </span>
+          </label>
         </div>
       </details>
 
@@ -250,7 +270,7 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
       <button
         type="button"
         onClick={() =>
-          onStart({ jobType, questionCount, cameraEnabled, category, priority, fixedDifficulty, readAloud })
+          onStart({ jobType, questionCount, cameraEnabled, category, priority, fixedDifficulty, readAloud, examMode })
         }
         className="mt-4 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 active:scale-[0.98]"
       >

@@ -21,6 +21,12 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 export type QuestionCategory = "general" | "behavioral" | "technical";
 export type CategoryFilter = QuestionCategory | "all";
 
+export const CATEGORY_LABELS_BASE: Record<QuestionCategory, string> = {
+  general: "General",
+  behavioral: "Behavioral",
+  technical: "Technical",
+};
+
 export type Question = {
   id: string;
   text: string;
@@ -103,4 +109,6 @@ export type StartOptions = {
   /** null = adaptive difficulty, starting at beginner. */
   fixedDifficulty: Difficulty | null;
   readAloud: boolean;
+  /** Exam mode holds every answer's feedback until the session ends, for a more realistic simulation. */
+  examMode: boolean;
 };

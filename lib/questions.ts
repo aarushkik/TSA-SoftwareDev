@@ -367,6 +367,15 @@ export function questionsFor(
   );
 }
 
+/** Every built-in question plus any user-added ones, for the question browser. */
+export function allQuestions(extraQuestions: Question[] = []): Question[] {
+  return [...QUESTIONS, ...extraQuestions];
+}
+
+export function findQuestionById(id: string, extraQuestions: Question[] = []): Question | null {
+  return allQuestions(extraQuestions).find((q) => q.id === id) ?? null;
+}
+
 /** A question not already asked this session, preferring the requested difficulty and falling back one tier if that pool is empty. */
 export function pickNextQuestion(
   jobType: JobType,

@@ -33,6 +33,14 @@ export default function AppHeader() {
               Practice
             </Link>
             <Link
+              href="/questions"
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                pathname === "/questions" ? "bg-teal-50 text-teal-700" : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Questions
+            </Link>
+            <Link
               href="/progress"
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                 pathname === "/progress" ? "bg-teal-50 text-teal-700" : "text-slate-500 hover:text-slate-700"
