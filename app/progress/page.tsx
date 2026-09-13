@@ -6,7 +6,7 @@ import CountUpNumber from "@/components/CountUpNumber";
 import { scoreColor } from "@/components/MetricBar";
 import PracticeHeatmap from "@/components/PracticeHeatmap";
 import ScoreTrendChart from "@/components/ScoreTrendChart";
-import { ACHIEVEMENTS, currentStreakDays, unlockedAchievements } from "@/lib/achievements";
+import { ACHIEVEMENTS, currentStreakDays, jobTypesCovered, unlockedAchievements } from "@/lib/achievements";
 import {
   clearSessions,
   deleteSession,
@@ -16,7 +16,9 @@ import {
   isSessionRecord,
   subscribeSessions,
 } from "@/lib/sessions";
-import { JOB_TYPE_LABELS, METRIC_LABELS, type Metric, type SessionRecord } from "@/lib/types";
+import { JOB_TYPE_LABELS, METRIC_LABELS, type JobType, type Metric, type SessionRecord } from "@/lib/types";
+
+const JOB_TYPES = Object.keys(JOB_TYPE_LABELS) as JobType[];
 
 function average(values: number[]): number {
   if (values.length === 0) return 0;
@@ -129,6 +131,7 @@ export default function ProgressPage() {
   const streak = currentStreakDays(sessions);
   const unlocked = new Set(unlockedAchievements(sessions).map((a) => a.id));
   const metricAverages = metricAveragesAcrossSessions(sessions);
+  const coveredJobTypes = jobTypesCovered(sessions);
 
   return (
     <main className="mx-auto max-w-2xl flex-1 animate-fade-in px-4 py-10">
@@ -250,6 +253,25 @@ export default function ProgressPage() {
               </ul>
             </div>
           )}
+
+          <p className="mt-5 text-xs font-medium text-slate-500">
+            Job types practiced <span className="font-normal text-slate-400">({coveredJobTypes.size}/{JOB_TYPES.length})</span>
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {JOB_TYPES.map((jt) => {
+              const isCovered = coveredJobTypes.has(jt);
+              return (
+                <span
+                  key={jt}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                    isCovered ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  {isCovered ? "✓" : "○"} {JOB_TYPE_LABELS[jt]}
+                </span>
+              );
+            })}
+          </div>
 
           <p className="mt-5 text-xs font-medium text-slate-500">
             Achievements <span className="font-normal text-slate-400">({unlocked.size}/{ACHIEVEMENTS.length})</span>

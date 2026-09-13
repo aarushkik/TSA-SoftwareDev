@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useSyncExternalStore } from "react";
+import { getSessions, getSessionsServerSnapshot, subscribeSessions } from "@/lib/sessions";
 import {
   DIFFICULTY_LABELS,
   JOB_TYPE_LABELS,
@@ -73,7 +75,13 @@ const JOB_TYPE_ICONS: Record<JobType, ReactNode> = {
   ),
 };
 
+function daysSince(iso: string): number {
+  const ms = Date.now() - new Date(iso).getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
+
 export default function ScenarioPicker({ onStart }: { onStart: (options: StartOptions) => void }) {
+  const sessions = useSyncExternalStore(subscribeSessions, getSessions, getSessionsServerSnapshot);
   const [jobType, setJobType] = useState<JobType>("general");
   const [questionCount, setQuestionCount] = useState(5);
   const [cameraEnabled, setCameraEnabled] = useState(false);
@@ -168,7 +176,23 @@ export default function ScenarioPicker({ onStart }: { onStart: (options: StartOp
         </p>
       </div>
 
-      <p className="mt-5 text-xs font-medium text-slate-600">What kind of role are you practicing for?</p>
+      {sessions.length > 0 && daysSince(sessions[0].completedAt) >= 3 && (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+          It&apos;s been {daysSince(sessions[0].completedAt)} days since your last practice session — ready to pick
+          back up?
+        </div>
+      )}
+
+      <div className="mt-5 flex items-center justify-between">
+        <p className="text-xs font-medium text-slate-600">What kind of role are you practicing for?</p>
+        <button
+          type="button"
+          onClick={() => setJobType(JOB_TYPES[Math.floor(Math.random() * JOB_TYPES.length)])}
+          className="text-[11px] font-medium text-teal-700 hover:text-teal-800"
+        >
+          🎲 Surprise me
+        </button>
+      </div>
       <div className="mt-2 grid grid-cols-2 gap-2">
         {JOB_TYPES.map((type) => (
           <button
