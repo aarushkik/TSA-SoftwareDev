@@ -336,8 +336,8 @@ export function analyzeAnswer(
       label: "Vocal energy",
       detail:
         rawScores.vocalEnergy >= 70
-          ? "Your volume varied naturally — an expressive, engaged delivery"
-          : "Your volume stayed fairly flat — varying it a bit more can help emphasize key points",
+          ? `Volume varied by ${cv.toFixed(2)} (natural variation is ${VOCAL_CV_FOR_FULL_SCORE.toFixed(2)} or higher) — an expressive, engaged delivery`
+          : `Volume varied by only ${cv.toFixed(2)} (natural variation is ${VOCAL_CV_FOR_FULL_SCORE.toFixed(2)} or higher) — a bit more range would help emphasize key points`,
       available: true,
     });
   }
